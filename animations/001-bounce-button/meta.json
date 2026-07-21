@@ -1,0 +1,8 @@
+{
+  "id": "001-bounce-button",
+  "name": "Bounce Button",
+  "description": "A button that bounces with a spring effect on hover.",
+  "type": "gsap",
+  "tags": ["button", "hover", "micro-interaction"],
+  "created": "2026-07-21"
+}

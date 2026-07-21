@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Animation Playground</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🎬</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles/main.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <h1><span>Anim</span>Playground</h1>
+    <span class="header-meta">0 animations</span>
+  </header>
+
+  <!-- Gallery -->
+  <main class="gallery">
+    <h2 class="gallery-title">Animation Library</h2>
+    <p class="gallery-subtitle">Click any animation to view it full-size, replay, record, or get the embed code.</p>
+    <div class="gallery-grid"></div>
+  </main>
+
+  <!-- Viewer Modal -->
+  <div class="viewer-overlay" id="viewer">
+    <div class="viewer-container">
+      <div class="viewer-header">
+        <span class="viewer-title"></span>
+        <button class="viewer-close" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="viewer-stage"></div>
+
+      <div class="viewer-controls">
+        <button class="ctrl-btn primary" id="btn-replay">&#8635; Replay</button>
+        <button class="ctrl-btn" id="btn-record">&#9210; Record MP4</button>
+        <button class="ctrl-btn" id="btn-gif" disabled title="GIF export coming soon">GIF</button>
+        <span class="ctrl-spacer"></span>
+        <button class="ctrl-btn" id="btn-embed">&lt;/&gt; Embed</button>
+      </div>
+
+      <div class="export-panel">
+        <div class="export-panel-title">Embed / Export</div>
+        <div class="export-tabs">
+          <button class="export-tab active" data-tab="iframe">iframe</button>
+          <button class="export-tab" data-tab="link">Direct Link</button>
+          <button class="export-tab" data-tab="info">Usage Info</button>
+        </div>
+        <div class="export-code">
+          <button class="copy-btn">Copy</button>
+          <code></code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { init } from '/scripts/gallery.js';
+    init();
+  </script>
+</body>
+</html>

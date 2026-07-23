@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Folder Books</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      overflow: hidden;
+    }
+
+    .scene {
+      perspective: 900px;
+      perspective-origin: 50% 45%;
+    }
+
+    .folder {
+      position: relative;
+      width: 300px;
+      height: 198px;
+      cursor: pointer;
+      filter: drop-shadow(0 24px 36px rgba(29, 78, 216, 0.22));
+    }
+
+    .folder-back {
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      background:
+        linear-gradient(145deg, #60a5fa 0%, #3b82f6 45%, #1d4ed8 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.45),
+        inset 0 -10px 28px rgba(30, 64, 175, 0.28);
+    }
+
+    .books {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .book {
+      position: absolute;
+      width: 100px;
+      height: 141px;
+      border-radius: 0;
+      transform-origin: 50% 100%;
+      pointer-events: auto;
+      cursor: pointer;
+      will-change: transform;
+    }
+
+    /* Render book contents at 2× then scale down for sharper cover images */
+    .book-inner {
+      --hinge: 0.035;
+      position: absolute;
+      inset: 0;
+      width: 200%;
+      height: 200%;
+      transform: scale(0.5);
+      transform-origin: 0 0;
+      transform-style: preserve-3d;
+      pointer-events: none;
+    }
+
+    .book-inner > .book-shadow,
+    .book-inner > .book-pages,
+    .book-inner > .book-cover {
+      pointer-events: auto;
+    }
+
+    /* Soft ground shadow — tight / crisp */
+    .book-shadow {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      top: 78%;
+      bottom: -3px;
+      background: rgba(15, 23, 42, 0.4);
+      filter: blur(3px);
+      opacity: 0.4;
+      border-radius: 2px;
+      transform: translateZ(-8px) scaleX(0.96);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Inner pages — revealed as the cover opens */
+    .book-pages {
+      position: absolute;
+      inset: 0;
+      border-radius: 0;
+      z-index: 1;
+      background:
+        linear-gradient(90deg, #e7e5e4 0 3px, #fafaf9 3px),
+        repeating-linear-gradient(
+          180deg,
+          transparent 0 14px,
+          rgba(168, 162, 158, 0.18) 14px 15px
+        );
+      background-color: #fafaf9;
+      box-shadow:
+        inset 4px 0 8px rgba(0, 0, 0, 0.06),
+        0 8px 20px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .book-pages::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 8px;
+      bottom: 8px;
+      width: 3px;
+      background: linear-gradient(180deg, #d6d3d1, #a8a29e);
+      border-radius: 1px;
+    }
+
+    .book-pages::after {
+      content: '';
+      position: absolute;
+      right: 10px;
+      top: 18px;
+      width: 62%;
+      height: 55%;
+      background:
+        linear-gradient(180deg, rgba(168, 162, 158, 0.35) 0 1px, transparent 1px) 0 0 / 100% 12px,
+        linear-gradient(180deg, rgba(168, 162, 158, 0.22) 0 1px, transparent 1px) 0 6px / 80% 12px;
+      opacity: 0.7;
+    }
+
+    /* Fixed spine strip — keeps cover art visible left of the crease */
+    .book-spine {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: calc(var(--hinge) * 100%);
+      z-index: 3;
+      overflow: hidden;
+      pointer-events: none;
+      border-left: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .book-spine .book-cover-img {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: calc(100% / var(--hinge));
+      height: 100%;
+      max-width: none;
+      object-fit: cover;
+      object-position: left top;
+      display: block;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Crease line at the hinge */
+    .book-spine::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(0, 0, 0, 0.18);
+      box-shadow: 1px 0 3px rgba(0, 0, 0, 0.08);
+      z-index: 2;
+    }
+
+    /* Flipping cover panel — hinged at its left edge (the crease) */
+    .book-cover {
+      position: absolute;
+      left: calc(var(--hinge) * 100%);
+      top: 0;
+      bottom: 0;
+      width: calc((1 - var(--hinge)) * 100%);
+      border-radius: 0;
+      z-index: 2;
+      transform-style: preserve-3d;
+      transform-origin: left center;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-left: none;
+      box-shadow:
+        0 12px 28px rgba(0, 0, 0, 0.16),
+        0 2px 6px rgba(0, 0, 0, 0.08);
+      will-change: transform;
+    }
+
+    .book-cover-front {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      transform: translateZ(0.1px);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    /* Soft shadow falloff from the spine crease */
+    .book-cover-front::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 12%;
+      background: linear-gradient(90deg, rgba(0, 0, 0, 0.08), transparent);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .book-cover-img {
+      position: absolute;
+      top: 0;
+      left: calc(var(--hinge) / (1 - var(--hinge)) * -100%);
+      width: calc(100% / (1 - var(--hinge)));
+      height: 100%;
+      max-width: none;
+      object-fit: cover;
+      object-position: left top;
+      display: block;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Inside of the cover — only visible while opening, not on close */
+    .book-cover-inside {
+      position: absolute;
+      inset: 0;
+      border-radius: 0;
+      background: linear-gradient(90deg, #d6d3d1, #c4c0bb);
+      transform: rotateY(180deg) translateZ(0.1px);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      box-shadow: inset -6px 0 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .book-1 {
+      left: 28px;
+      bottom: 43px;
+      z-index: 3;
+    }
+
+    .book-2 {
+      left: 100px;
+      bottom: 40px;
+      z-index: 5;
+    }
+
+    .book-3 {
+      left: 172px;
+      bottom: 43px;
+      z-index: 4;
+    }
+
+    .folder-front {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 86px;
+      z-index: 6;
+      /* Catch hover so books under the flap don't get book-hover effects */
+      pointer-events: auto;
+    }
+
+    .folder-glass {
+      position: absolute;
+      inset: 0;
+      backdrop-filter: blur(14px) saturate(1.2);
+      -webkit-backdrop-filter: blur(14px) saturate(1.2);
+      background: linear-gradient(
+        180deg,
+        rgba(147, 197, 253, 0.35) 0%,
+        rgba(59, 130, 246, 0.55) 40%,
+        rgba(29, 78, 216, 0.72) 100%
+      );
+      border-radius: 0 0 12px 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.45),
+        inset 0 -14px 32px rgba(30, 64, 175, 0.22);
+    }
+
+    .folder-glass::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(
+        115deg,
+        rgba(255, 255, 255, 0.4) 0%,
+        transparent 34%,
+        transparent 68%,
+        rgba(255, 255, 255, 0.14) 100%
+      );
+    }
+  </style>
+</head>
+<body>
+  <div class="scene">
+    <div class="folder" id="folder" aria-label="Folder with three overlapping books">
+      <div class="folder-back"></div>
+
+      <div class="books">
+        <div class="book book-1" data-book="1">
+          <div class="book-inner">
+            <div class="book-shadow" aria-hidden="true"></div>
+            <div class="book-pages" aria-hidden="true"></div>
+            <div class="book-spine" aria-hidden="true">
+              <img class="book-cover-img" src="./assets/cover-personal-mba.png" width="724" height="1024" alt="" />
+            </div>
+            <div class="book-cover">
+              <div class="book-cover-inside" aria-hidden="true"></div>
+              <div class="book-cover-front">
+                <img class="book-cover-img" src="./assets/cover-personal-mba.png" width="724" height="1024" alt="The Personal MBA by Josh Kaufman" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="book book-2" data-book="2">
+          <div class="book-inner">
+            <div class="book-shadow" aria-hidden="true"></div>
+            <div class="book-pages" aria-hidden="true"></div>
+            <div class="book-spine" aria-hidden="true">
+              <img class="book-cover-img" src="./assets/cover-thinking-in-systems.png" width="724" height="1024" alt="" />
+            </div>
+            <div class="book-cover">
+              <div class="book-cover-inside" aria-hidden="true"></div>
+              <div class="book-cover-front">
+                <img class="book-cover-img" src="./assets/cover-thinking-in-systems.png" width="724" height="1024" alt="Thinking in Systems by Donella H. Meadows" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="book book-3" data-book="3">
+          <div class="book-inner">
+            <div class="book-shadow" aria-hidden="true"></div>
+            <div class="book-pages" aria-hidden="true"></div>
+            <div class="book-spine" aria-hidden="true">
+              <img class="book-cover-img" src="./assets/cover-harry-potter.png" width="724" height="1024" alt="" />
+            </div>
+            <div class="book-cover">
+              <div class="book-cover-inside" aria-hidden="true"></div>
+              <div class="book-cover-front">
+                <img class="book-cover-img" src="./assets/cover-harry-potter.png" width="724" height="1024" alt="Harry Potter and the Philosopher's Stone by J.K. Rowling" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="folder-front">
+        <div class="folder-glass"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script>
+    const folder = document.getElementById('folder');
+    const books = {
+      1: document.querySelector('.book-1'),
+      2: document.querySelector('.book-2'),
+      3: document.querySelector('.book-3'),
+    };
+
+    const rest = {
+      1: { x: 0, y: 8, rotate: -8, scale: 0.97, opacity: 0.92 },
+      2: { x: 0, y: 0, rotate: 0, scale: 1, opacity: 1 },
+      3: { x: 0, y: 8, rotate: 8, scale: 0.97, opacity: 0.94 },
+    };
+
+    const open = {
+      1: { x: -6, y: -14, rotate: -10, scale: 0.99, opacity: 0.96 },
+      2: { x: 0, y: -22, rotate: 0, scale: 1.02, opacity: 1 },
+      3: { x: 6, y: -14, rotate: 10, scale: 0.99, opacity: 0.97 },
+    };
+
+    const focusBoost = {
+      1: { x: -8, y: -48, rotate: -6, scale: 1.04, opacity: 1 },
+      2: { x: 0, y: -54, rotate: 0, scale: 1.05, opacity: 1 },
+      3: { x: 8, y: -48, rotate: 6, scale: 1.04, opacity: 1 },
+    };
+
+    let folderOpen = false;
+    let focusedBook = null;
+
+    function coverOf(id) {
+      return books[id].querySelector('.book-cover');
+    }
+
+    function shadowOf(id) {
+      return books[id].querySelector('.book-shadow');
+    }
+
+    function applyPose(el, pose, duration = 0.5, ease = 'power3.out') {
+      return gsap.to(el, {
+        x: pose.x,
+        y: pose.y,
+        rotation: pose.rotate,
+        scale: pose.scale,
+        opacity: pose.opacity,
+        duration,
+        ease,
+        overwrite: 'auto',
+      });
+    }
+
+    function resetTilt(id, duration = 0.35) {
+      gsap.to(books[id], {
+        rotationX: 0,
+        rotationY: 0,
+        duration,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+    }
+
+    function enhanceShadow(id, on, duration = 0.4) {
+      gsap.to(shadowOf(id), {
+        opacity: on ? 0.55 : 0.4,
+        scaleX: on ? 1 : 0.96,
+        filter: on ? 'blur(4px)' : 'blur(3px)',
+        duration,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+    }
+
+    function pagesOf(id) {
+      return books[id].querySelector('.book-pages');
+    }
+
+    function openCover(id, duration = 0.55) {
+      gsap.to(coverOf(id), {
+        rotateY: -42,
+        duration,
+        ease: 'back.out(2.2)',
+        overwrite: 'auto',
+        onUpdate: function () {
+          const rot = Math.abs(gsap.getProperty(coverOf(id), 'rotateY'));
+          gsap.set(pagesOf(id), { opacity: rot > 10 ? 1 : 0 });
+        },
+      });
+    }
+
+    function closeCover(id, duration = 0.35) {
+      gsap.set(pagesOf(id), { opacity: 0 });
+      gsap.killTweensOf(coverOf(id));
+      gsap.to(coverOf(id), {
+        rotateY: 0,
+        duration,
+        ease: 'power2.inOut',
+        overwrite: true,
+      });
+    }
+
+    function closeAllCovers(duration = 0.35) {
+      [1, 2, 3].forEach((id) => {
+        closeCover(id, duration);
+        enhanceShadow(id, false, duration);
+        resetTilt(id, duration);
+      });
+    }
+
+    function setBookPointerEvents(activeId) {
+      [1, 2, 3].forEach((id) => {
+        books[id].style.pointerEvents =
+          activeId === null || activeId === id ? 'auto' : 'none';
+      });
+    }
+
+    function goRest(duration = 0.45) {
+      folderOpen = false;
+      focusedBook = null;
+      setBookPointerEvents(null);
+      closeAllCovers(duration);
+      [1, 2, 3].forEach((id) => {
+        gsap.killTweensOf(books[id]);
+        applyPose(books[id], rest[id], duration, 'power2.inOut');
+      });
+      gsap.to(folder, {
+        filter: 'drop-shadow(0 24px 36px rgba(29, 78, 216, 0.22))',
+        duration,
+        ease: 'power2.inOut',
+        overwrite: 'auto',
+      });
+    }
+
+    function goOpen(duration = 0.5) {
+      // Don't animate to folder-open if the cursor already left the folder
+      if (!folder.matches(':hover')) {
+        goRest(duration);
+        return;
+      }
+      folderOpen = true;
+      [1, 2, 3].forEach((id) => {
+        if (focusedBook === id) return;
+        closeCover(id, duration * 0.8);
+        enhanceShadow(id, false, duration * 0.8);
+        resetTilt(id, duration * 0.8);
+        applyPose(books[id], open[id], duration, 'back.out(1.3)');
+      });
+    }
+
+    function focusBook(id) {
+      if (focusedBook === id) return;
+
+      if (focusedBook) {
+        closeCover(focusedBook, 0.3);
+        enhanceShadow(focusedBook, false, 0.3);
+        resetTilt(focusedBook, 0.3);
+      }
+
+      focusedBook = id;
+      setBookPointerEvents(id);
+      if (!folderOpen) goOpen(0.35);
+
+      [1, 2, 3].forEach((other) => {
+        if (other === id) return;
+        closeCover(other, 0.3);
+        enhanceShadow(other, false, 0.3);
+        resetTilt(other, 0.3);
+        applyPose(books[other], open[other], 0.35, 'power2.out');
+      });
+
+      applyPose(books[id], focusBoost[id], 0.45, 'back.out(1.6)');
+      openCover(id, 0.55);
+      enhanceShadow(id, true, 0.45);
+    }
+
+    function unfocusBook() {
+      if (focusedBook) {
+        closeCover(focusedBook, 0.35);
+        enhanceShadow(focusedBook, false, 0.35);
+        resetTilt(focusedBook, 0.35);
+      }
+      focusedBook = null;
+      setBookPointerEvents(null);
+
+      // Still over the folder → folder-open pose; left entirely → rest
+      if (folder.matches(':hover')) {
+        goOpen(0.35);
+      } else {
+        goRest(0.4);
+      }
+    }
+
+    function tiltTowardPointer(id, event) {
+      const el = books[id];
+      const rect = el.getBoundingClientRect();
+      const px = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      const py = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+
+      gsap.to(el, {
+        rotationY: px * 12,
+        rotationX: -py * 8,
+        duration: 0.35,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+    }
+
+    [1, 2, 3].forEach((id) => {
+      gsap.set(books[id], {
+        x: rest[id].x,
+        y: rest[id].y,
+        rotation: rest[id].rotate,
+        rotationX: 0,
+        rotationY: 0,
+        scale: rest[id].scale,
+        opacity: rest[id].opacity,
+        transformPerspective: 800,
+      });
+      gsap.set(pagesOf(id), { opacity: 0 });
+      gsap.set(coverOf(id), {
+        transformOrigin: 'left center',
+        rotateY: 0,
+        transformPerspective: 700,
+        transformStyle: 'preserve-3d',
+      });
+      gsap.set(shadowOf(id), { opacity: 0.4, scaleX: 0.96 });
+    });
+
+    gsap.fromTo(folder,
+      { opacity: 0, y: 20, scale: 0.94 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.85, ease: 'power3.out', delay: 0.08 }
+    );
+
+    folder.addEventListener('mouseenter', () => {
+      if (!focusedBook) goOpen();
+    });
+    folder.addEventListener('mouseleave', () => goRest());
+
+    Object.entries(books).forEach(([id, el]) => {
+      const num = Number(id);
+
+      el.addEventListener('mouseenter', (e) => {
+        e.stopPropagation();
+        focusBook(num);
+        tiltTowardPointer(num, e);
+      });
+
+      el.addEventListener('mousemove', (e) => {
+        if (focusedBook !== num) return;
+        tiltTowardPointer(num, e);
+      });
+
+      el.addEventListener('mouseleave', (e) => {
+        e.stopPropagation();
+        setBookPointerEvents(null);
+
+        const nextBook = e.relatedTarget && e.relatedTarget.closest
+          ? e.relatedTarget.closest('.book')
+          : null;
+
+        if (nextBook) {
+          focusBook(Number(nextBook.dataset.book));
+          return;
+        }
+
+        const stillInFolder = e.relatedTarget && folder.contains(e.relatedTarget);
+        if (stillInFolder) {
+          unfocusBook();
+        } else {
+          // Left the folder entirely — skip folder-open, go straight to rest
+          goRest(0.4);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

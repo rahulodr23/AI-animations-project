@@ -27,4 +27,12 @@ export const animations = [
     tags: ['checkmark', 'success', 'icon'],
     folder: '/animations/003-lottie-check',
   },
+  {
+    id: '004-folder-books',
+    name: 'Folder Books',
+    description: 'A yellow frosted folder with overlapping book covers that pop out on hover.',
+    type: 'gsap',
+    tags: ['folder', 'hover', 'books', 'glassmorphism', '3d'],
+    folder: '/animations/004-folder-books',
+  },
 ];

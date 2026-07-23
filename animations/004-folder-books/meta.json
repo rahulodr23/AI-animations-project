@@ -1,0 +1,8 @@
+{
+  "id": "004-folder-books",
+  "name": "Folder Books",
+  "description": "A yellow frosted folder with overlapping book covers that pop out on hover.",
+  "type": "gsap",
+  "tags": ["folder", "hover", "books", "glassmorphism", "3d"],
+  "created": "2026-07-23"
+}

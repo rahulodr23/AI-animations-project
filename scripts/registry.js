@@ -35,4 +35,12 @@ export const animations = [
     tags: ['folder', 'hover', 'books', 'glassmorphism', '3d'],
     folder: '/animations/004-folder-books',
   },
+  {
+    id: '005-details-edit',
+    name: 'Details Edit Split',
+    description: 'A details card that splits into jelly-bouncy editable fields on edit, then merges back on save or cancel.',
+    type: 'gsap',
+    tags: ['form', 'edit', 'jelly', 'micro-interaction', 'card'],
+    folder: '/animations/005-details-edit',
+  },
 ];

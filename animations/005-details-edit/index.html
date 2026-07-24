@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Details Edit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      font-family: 'DM Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .scene {
+      position: relative;
+      width: min(360px, calc(100vw - 32px));
+    }
+
+    /* Hide SVG defs */
+    .goo-svg {
+      position: absolute;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+    }
+
+    /* Dark jelly shells only — goo filter creates the metaball bridge */
+    .goo-layer {
+      position: absolute;
+      left: -48px;
+      right: -48px;
+      top: -48px;
+      bottom: -48px;
+      padding: 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      filter: url(#goo);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .shell {
+      background: #1e1e1e;
+      flex-shrink: 0;
+      width: 100%;
+      transform-origin: 50% 50%;
+      will-change: border-radius, transform;
+    }
+
+    .shell.header {
+      border-radius: 16px 16px 0 0;
+    }
+
+    .shell.field {
+      border-radius: 0;
+    }
+
+    .shell.field:last-child {
+      border-radius: 0 0 16px 16px;
+    }
+
+    /* Text/controls sit on top, never filtered — also sizes the scene */
+    .stack {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      z-index: 1;
+    }
+
+    .block {
+      position: relative;
+      padding: 16px 20px;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .block.header {
+      padding-top: 18px;
+      padding-bottom: 14px;
+    }
+
+    .block.field {
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+
+    .block.field:last-child {
+      padding-bottom: 20px;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: 16px;
+      min-height: 24px;
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .actions {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-shrink: 0;
+      margin-left: auto;
+      width: 56px;
+      height: 24px;
+    }
+
+    .icon-btn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #ffffff;
+      border-radius: 6px;
+      line-height: 0;
+      transform-origin: center center;
+    }
+
+    .icon-btn:focus-visible {
+      outline: 2px solid #004EF7;
+      outline-offset: 2px;
+    }
+
+    .icon-btn svg {
+      width: 20px;
+      height: 20px;
+      display: block;
+    }
+
+    .icon-btn.save { color: #F2FF00; }
+    .icon-btn.close { color: #ffffff; }
+
+    .icon-btn.edit {
+      position: absolute;
+      right: 0;
+      top: 0;
+    }
+
+    .edit-actions {
+      position: absolute;
+      right: 0;
+      top: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .edit-actions.is-visible {
+      pointer-events: auto;
+    }
+
+    .field-body {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .drift {
+      will-change: transform;
+    }
+
+    .label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #b4b4b4;
+      line-height: 1.2;
+    }
+
+    .value-input {
+      appearance: none;
+      border: none;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.35;
+      width: 100%;
+      outline: none;
+      caret-color: #004EF7;
+    }
+
+    .value-input:disabled {
+      cursor: default;
+      opacity: 1;
+      color: #ffffff;
+      -webkit-text-fill-color: #ffffff;
+    }
+
+    .value-input:not(:disabled) {
+      cursor: text;
+    }
+
+    .value-input.is-invalid {
+      color: #ff6b6b;
+      -webkit-text-fill-color: #ff6b6b;
+    }
+
+    .value-input::-webkit-outer-spin-button,
+    .value-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- Gooey / metaball filter: blur + alpha contrast creates the jelly bridge -->
+  <svg class="goo-svg" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="goo" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur" />
+        <feColorMatrix
+          in="blur"
+          mode="matrix"
+          values="
+            1 0 0 0 0
+            0 1 0 0 0
+            0 0 1 0 0
+            0 0 0 24 -12"
+          result="gooey"
+        />
+      </filter>
+    </defs>
+  </svg>
+
+  <div class="scene" id="scene">
+    <div class="goo-layer" id="gooLayer" aria-hidden="true">
+      <div class="shell header" data-shell="0"></div>
+      <div class="shell field" data-shell="1"></div>
+      <div class="shell field" data-shell="2"></div>
+      <div class="shell field" data-shell="3"></div>
+      <div class="shell field" data-shell="4"></div>
+    </div>
+
+    <div class="stack" id="stack" aria-label="Your details">
+      <div class="block header" data-block="0">
+        <div class="drift" data-drift="up">
+          <div class="header-row">
+            <h2 class="title">Your details</h2>
+            <div class="actions">
+              <button type="button" class="icon-btn edit" id="editBtn" aria-label="Edit details" title="Edit">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M15.232 5.232a3 3 0 0 1 4.243 4.243L8.5 20.45 3 21.5l1.05-5.5L15.232 5.232Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  <path d="M13.5 7 17 10.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <div class="edit-actions" id="editActions">
+                <button type="button" class="icon-btn close" id="closeBtn" aria-label="Cancel editing" title="Cancel">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </button>
+                <button type="button" class="icon-btn save" id="saveBtn" aria-label="Save details" title="Save">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M5 12.5 9.5 17 19 7.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="block field" data-block="1">
+        <div class="field-body drift" data-drift="up">
+          <label class="label" for="name">Name</label>
+          <input class="value-input" id="name" name="name" type="text" value="Rahul Odedra" disabled autocomplete="name" />
+        </div>
+      </div>
+
+      <div class="block field" data-block="2">
+        <div class="field-body">
+          <label class="label" for="dob">DOB</label>
+          <input class="value-input" id="dob" name="dob" type="text" value="23/11/1999" disabled inputmode="numeric" autocomplete="bday" />
+        </div>
+      </div>
+
+      <div class="block field" data-block="3">
+        <div class="field-body drift" data-drift="down">
+          <label class="label" for="email">Email</label>
+          <input class="value-input" id="email" name="email" type="email" value="rahulodedra1199@gmail.com" disabled autocomplete="email" />
+        </div>
+      </div>
+
+      <div class="block field" data-block="4">
+        <div class="field-body drift" data-drift="down">
+          <label class="label" for="number">Number</label>
+          <input class="value-input" id="number" name="number" type="tel" value="9106982905" disabled inputmode="tel" autocomplete="tel" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script>
+    const scene = document.getElementById('scene');
+    const stack = document.getElementById('stack');
+    const gooLayer = document.getElementById('gooLayer');
+    const blocks = gsap.utils.toArray('.block');
+    const shells = gsap.utils.toArray('.shell');
+    const headerBlock = blocks[0];
+    const middleBlocks = blocks.slice(1, -1);
+    const lastBlock = blocks[blocks.length - 1];
+    const headerShell = shells[0];
+    const middleShells = shells.slice(1, -1);
+    const lastShell = shells[shells.length - 1];
+    const inputs = gsap.utils.toArray('.value-input');
+    const blurNode = document.querySelector('#goo feGaussianBlur');
+    const driftUp = gsap.utils.toArray('[data-drift="up"]');
+    const driftDown = gsap.utils.toArray('[data-drift="down"]');
+
+    const editBtn = document.getElementById('editBtn');
+    const editActions = document.getElementById('editActions');
+    const closeBtn = document.getElementById('closeBtn');
+    const saveBtn = document.getElementById('saveBtn');
+
+    // Edit-actions start hidden (no flash / no overlap with pencil)
+    gsap.set(editActions.children, { autoAlpha: 0, scale: 0 });
+
+    // Gap large enough to show the neck, then fully snap apart
+    const EDIT_GAP = 14;
+    const EDIT_RADIUS = 12;
+    const OPEN_DURATION = 0.35;
+    const CLOSE_DURATION = 0.4;
+    const EASE_GAP = 'back.out(1.4)';
+    const EASE_SOFT = 'power2.inOut';
+    // Secondary motion on text (px) — feels like mass inside the card
+    const TEXT_DRIFT = 8;
+
+    let isEditing = false;
+    let isAnimating = false;
+    let snapshot = {};
+    let activeTween = null;
+
+    function syncShellSizes() {
+      blocks.forEach((block, i) => {
+        shells[i].style.height = `${block.offsetHeight}px`;
+      });
+    }
+
+    syncShellSizes();
+    window.addEventListener('resize', syncShellSizes);
+
+    function captureValues() {
+      snapshot = {};
+      inputs.forEach((input) => {
+        snapshot[input.id] = input.value;
+        input.classList.remove('is-invalid');
+      });
+    }
+
+    function restoreValues() {
+      inputs.forEach((input) => {
+        if (snapshot[input.id] !== undefined) input.value = snapshot[input.id];
+        input.classList.remove('is-invalid');
+      });
+    }
+
+    function setEditable(enabled) {
+      inputs.forEach((input) => {
+        input.disabled = !enabled;
+      });
+      if (enabled && inputs[0]) {
+        requestAnimationFrame(() => inputs[0].focus({ preventScroll: true }));
+      }
+    }
+
+    function swapActions(toEdit) {
+      const ICON_OUT = 0.18;
+      const ICON_IN = 0.22;
+
+      if (toEdit) {
+        // Edit out fully first, then close/save in — no overlap
+        gsap.to(editBtn, {
+          autoAlpha: 0,
+          scale: 0,
+          duration: ICON_OUT,
+          ease: 'power2.in',
+          pointerEvents: 'none',
+          onComplete: () => {
+            editBtn.hidden = true;
+            editActions.classList.add('is-visible');
+            gsap.fromTo(
+              editActions.children,
+              { autoAlpha: 0, scale: 0 },
+              {
+                autoAlpha: 1,
+                scale: 1,
+                duration: ICON_IN,
+                stagger: 0.05,
+                ease: 'power2.out',
+                overwrite: true,
+              }
+            );
+          },
+        });
+      } else {
+        // Close/save out fully first, then edit in — no overlap
+        gsap.to(editActions.children, {
+          autoAlpha: 0,
+          scale: 0,
+          duration: ICON_OUT,
+          stagger: 0.04,
+          ease: 'power2.in',
+          overwrite: true,
+          onComplete: () => {
+            editActions.classList.remove('is-visible');
+            editBtn.hidden = false;
+            gsap.fromTo(
+              editBtn,
+              { autoAlpha: 0, scale: 0 },
+              {
+                autoAlpha: 1,
+                scale: 1,
+                duration: ICON_IN,
+                ease: 'power2.out',
+                pointerEvents: 'auto',
+                overwrite: true,
+              }
+            );
+          },
+        });
+      }
+    }
+
+    function killActive() {
+      if (activeTween) {
+        activeTween.kill();
+        activeTween = null;
+      }
+    }
+
+    function setGap(value) {
+      gsap.set([stack, gooLayer], { gap: value });
+    }
+
+    /** Soft lag on text — same direction as the card, then settle back. */
+    function addTextDrift(tl, duration, { opening }) {
+      const upPeak = opening ? -TEXT_DRIFT : TEXT_DRIFT;
+      const downPeak = opening ? TEXT_DRIFT : -TEXT_DRIFT;
+
+      tl.fromTo(
+        driftUp,
+        { y: 0 },
+        {
+          keyframes: [
+            { y: upPeak, duration: duration * 0.5, ease: 'power2.out' },
+            { y: 0, duration: duration * 0.7, ease: 'power2.inOut' },
+          ],
+        },
+        0
+      );
+
+      tl.fromTo(
+        driftDown,
+        { y: 0 },
+        {
+          keyframes: [
+            { y: downPeak, duration: duration * 0.5, ease: 'power2.out' },
+            { y: 0, duration: duration * 0.7, ease: 'power2.inOut' },
+          ],
+        },
+        0
+      );
+    }
+
+    /** Same shell jelly on open and close */
+    function addShellJelly(tl, duration) {
+      tl.fromTo(
+        shells,
+        { scaleY: 1, scaleX: 1 },
+        {
+          keyframes: [
+            { scaleY: 1.045, scaleX: 0.988, duration: duration * 0.32, ease: 'power2.out' },
+            { scaleY: 1, scaleX: 1, duration: duration * 0.68, ease: 'elastic.out(1, 0.72)' },
+          ],
+        },
+        0
+      );
+    }
+
+    /** Same goo blur pulse on open and close */
+    function addBlurPulse(tl, duration, { opening }) {
+      const mid = 14;
+      const end = opening ? 8 : 10;
+      const start = opening ? 10 : 8;
+
+      tl.fromTo(
+        blurNode,
+        { attr: { stdDeviation: start } },
+        { attr: { stdDeviation: mid }, duration: duration * 0.4, ease: 'power1.out' },
+        0
+      );
+      tl.to(
+        blurNode,
+        { attr: { stdDeviation: end }, duration: duration * 0.6, ease: EASE_SOFT },
+        duration * 0.4
+      );
+    }
+
+    function openEdit() {
+      if (isEditing || isAnimating) return;
+      killActive();
+      isAnimating = true;
+      isEditing = true;
+      captureValues();
+      setEditable(true);
+      swapActions(true);
+      syncShellSizes();
+
+      const tl = gsap.timeline({
+        onUpdate: syncShellSizes,
+        onComplete: () => {
+          isAnimating = false;
+          activeTween = null;
+          gsap.set([...driftUp, ...driftDown], { clearProps: 'transform' });
+          syncShellSizes();
+        },
+      });
+      activeTween = tl;
+
+      addBlurPulse(tl, OPEN_DURATION, { opening: true });
+
+      tl.to([stack, gooLayer], {
+        gap: EDIT_GAP,
+        duration: OPEN_DURATION,
+        ease: EASE_GAP,
+      }, 0);
+
+      addTextDrift(tl, OPEN_DURATION, { opening: true });
+      addShellJelly(tl, OPEN_DURATION);
+
+      tl.to([headerBlock, headerShell], {
+        borderRadius: EDIT_RADIUS,
+        duration: OPEN_DURATION,
+        ease: EASE_SOFT,
+      }, 0);
+
+      tl.to(headerBlock, {
+        paddingTop: 16,
+        paddingBottom: 16,
+        duration: OPEN_DURATION,
+        ease: EASE_SOFT,
+      }, 0);
+
+      tl.to([...middleBlocks, ...middleShells], {
+        borderRadius: EDIT_RADIUS,
+        duration: OPEN_DURATION,
+        ease: EASE_SOFT,
+      }, 0);
+
+      tl.to(middleBlocks, {
+        paddingTop: 16,
+        paddingBottom: 16,
+        duration: OPEN_DURATION,
+        ease: EASE_SOFT,
+      }, 0);
+
+      tl.to([lastBlock, lastShell], {
+        borderRadius: EDIT_RADIUS,
+        duration: OPEN_DURATION,
+        ease: EASE_SOFT,
+      }, 0);
+
+      tl.to(lastBlock, {
+        paddingTop: 16,
+        paddingBottom: 16,
+        duration: OPEN_DURATION,
+        ease: EASE_SOFT,
+      }, 0);
+    }
+
+    function closeEdit({ save }) {
+      if (!isEditing || isAnimating) return;
+      killActive();
+      isAnimating = true;
+
+      if (save) captureValues();
+      else restoreValues();
+
+      setEditable(false);
+      swapActions(false);
+
+      const tl = gsap.timeline({
+        onUpdate: syncShellSizes,
+        onComplete: () => {
+          isEditing = false;
+          isAnimating = false;
+          activeTween = null;
+          gsap.set(shells, { clearProps: 'transform' });
+          gsap.set([...driftUp, ...driftDown], { clearProps: 'transform' });
+          setGap(0);
+          syncShellSizes();
+        },
+      });
+      activeTween = tl;
+
+      // Mirror open: same blur, gap ease, text drift, and shell jelly
+      addBlurPulse(tl, CLOSE_DURATION, { opening: false });
+
+      tl.to([stack, gooLayer], {
+        gap: 0,
+        duration: CLOSE_DURATION,
+        ease: EASE_GAP,
+      }, 0);
+
+      addTextDrift(tl, CLOSE_DURATION, { opening: false });
+      addShellJelly(tl, CLOSE_DURATION);
+
+      tl.to(headerBlock, {
+        borderRadius: '16px 16px 0px 0px',
+        paddingTop: 18,
+        paddingBottom: 14,
+        duration: CLOSE_DURATION,
+        ease: EASE_SOFT,
+      }, 0);
+
+      tl.to(headerShell, {
+        borderRadius: '16px 16px 0px 0px',
+        duration: CLOSE_DURATION,
+        ease: EASE_SOFT,
+      }, 0);
+
+      tl.to(middleBlocks, {
+        borderRadius: 0,
+        paddingTop: 10,
+        paddingBottom: 10,
+        duration: CLOSE_DURATION,
+        ease: EASE_SOFT,
+      }, 0);
+
+      tl.to(middleShells, {
+        borderRadius: 0,
+        duration: CLOSE_DURATION,
+        ease: EASE_SOFT,
+      }, 0);
+
+      tl.to(lastBlock, {
+        borderRadius: '0px 0px 16px 16px',
+        paddingTop: 10,
+        paddingBottom: 20,
+        duration: CLOSE_DURATION,
+        ease: EASE_SOFT,
+      }, 0);
+
+      tl.to(lastShell, {
+        borderRadius: '0px 0px 16px 16px',
+        duration: CLOSE_DURATION,
+        ease: EASE_SOFT,
+      }, 0);
+    }
+
+    editBtn.addEventListener('click', openEdit);
+    closeBtn.addEventListener('click', () => closeEdit({ save: false }));
+    saveBtn.addEventListener('click', () => {
+      if (!validateFieldsForSave()) return;
+      closeEdit({ save: true });
+    });
+
+    /* ——— Field input rules: DOB / email / phone ——— */
+    const dobInput = document.getElementById('dob');
+    const emailInput = document.getElementById('email');
+    const phoneInput = document.getElementById('number');
+
+    function formatDob(raw) {
+      const digits = raw.replace(/\D/g, '').slice(0, 8);
+      const parts = [];
+      if (digits.length > 0) parts.push(digits.slice(0, 2));
+      if (digits.length > 2) parts.push(digits.slice(2, 4));
+      if (digits.length > 4) parts.push(digits.slice(4, 8));
+      return parts.join('/');
+    }
+
+    function isValidDob(value) {
+      const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+      if (!match) return false;
+      const day = Number(match[1]);
+      const month = Number(match[2]);
+      const year = Number(match[3]);
+      if (month < 1 || month > 12) return false;
+      if (year < 1900 || year > new Date().getFullYear()) return false;
+      const daysInMonth = new Date(year, month, 0).getDate();
+      if (day < 1 || day > daysInMonth) return false;
+      const date = new Date(year, month - 1, day);
+      return date <= new Date();
+    }
+
+    function isValidEmail(value) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim());
+    }
+
+    function isValidPhone(value) {
+      const digits = value.replace(/\D/g, '');
+      return digits.length >= 10 && digits.length <= 15;
+    }
+
+    function setFieldInvalid(input, invalid) {
+      input.classList.toggle('is-invalid', invalid);
+    }
+
+    dobInput.addEventListener('input', () => {
+      const formatted = formatDob(dobInput.value);
+      dobInput.value = formatted;
+      setFieldInvalid(dobInput, formatted.length === 10 && !isValidDob(formatted));
+    });
+
+    dobInput.addEventListener('keydown', (e) => {
+      const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
+      if (allowed.includes(e.key) || e.ctrlKey || e.metaKey) return;
+      if (!/^\d$/.test(e.key) && e.key !== '/') e.preventDefault();
+    });
+
+    emailInput.addEventListener('input', () => {
+      const cleaned = emailInput.value.replace(/\s/g, '').replace(/[^a-zA-Z0-9.@_+-]/g, '');
+      if (cleaned !== emailInput.value) emailInput.value = cleaned;
+      setFieldInvalid(emailInput, emailInput.value.length > 0 && !isValidEmail(emailInput.value));
+    });
+
+    phoneInput.addEventListener('input', () => {
+      const digits = phoneInput.value.replace(/\D/g, '').slice(0, 15);
+      phoneInput.value = digits;
+      setFieldInvalid(phoneInput, digits.length > 0 && !isValidPhone(digits));
+    });
+
+    phoneInput.addEventListener('keydown', (e) => {
+      const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
+      if (allowed.includes(e.key) || e.ctrlKey || e.metaKey) return;
+      if (!/^\d$/.test(e.key)) e.preventDefault();
+    });
+
+    function validateFieldsForSave() {
+      const dobOk = isValidDob(dobInput.value);
+      const emailOk = isValidEmail(emailInput.value);
+      const phoneOk = isValidPhone(phoneInput.value);
+
+      setFieldInvalid(dobInput, !dobOk);
+      setFieldInvalid(emailInput, !emailOk);
+      setFieldInvalid(phoneInput, !phoneOk);
+
+      if (!dobOk) {
+        dobInput.focus();
+        return false;
+      }
+      if (!emailOk) {
+        emailInput.focus();
+        return false;
+      }
+      if (!phoneOk) {
+        phoneInput.focus();
+        return false;
+      }
+      return true;
+    }
+
+    stack.addEventListener('keydown', (e) => {
+      if (!isEditing) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeEdit({ save: false });
+      }
+    });
+
+    gsap.from(scene, {
+      opacity: 0,
+      y: 12,
+      duration: 0.45,
+      ease: 'power3.out',
+      delay: 0.04,
+    });
+  </script>
+</body>
+</html>

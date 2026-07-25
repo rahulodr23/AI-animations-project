@@ -235,9 +235,6 @@ export function init() {
   renderGallery();
 
   document.querySelector('.viewer-close')?.addEventListener('click', closeViewer);
-  document.getElementById('viewer')?.addEventListener('click', (e) => {
-    if (e.target.id === 'viewer') closeViewer();
-  });
 
   document.getElementById('btn-replay')?.addEventListener('click', replayAnimation);
   document.getElementById('btn-record')?.addEventListener('click', handleRecordClick);

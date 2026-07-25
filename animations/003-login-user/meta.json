@@ -1,0 +1,8 @@
+{
+  "id": "003-login-user",
+  "name": "Fluid Login",
+  "description": "A matte-black user icon with a prismatic fluid ring. Tap to spin the glow, fill the icon, then reveal a success check.",
+  "type": "gsap",
+  "tags": ["login", "fluid", "glow", "micro-interaction", "success"],
+  "created": "2026-07-25"
+}

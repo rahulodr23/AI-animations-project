@@ -1,5 +1,5 @@
 {
-  "id": "004-folder-books",
+  "id": "001-folder-books",
   "name": "Folder Books",
   "description": "A yellow frosted folder with overlapping book covers that pop out on hover.",
   "type": "gsap",

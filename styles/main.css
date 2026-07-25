@@ -170,17 +170,13 @@ select {
   line-height: 1.5;
 }
 
-/* ── Viewer Modal ───────────────────────────── */
+/* ── Viewer (fullscreen) ────────────────────── */
 
 .viewer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
   z-index: 200;
   display: flex;
-  align-items: center;
-  justify-content: center;
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition-base);
@@ -192,22 +188,18 @@ select {
 }
 
 .viewer-container {
-  width: 90vw;
-  max-width: 900px;
-  max-height: 90vh;
+  width: 100%;
+  height: 100%;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-lg);
-  transform: scale(0.95) translateY(10px);
+  transform: translateY(12px);
   transition: transform var(--transition-base);
 }
 
 .viewer-overlay.active .viewer-container {
-  transform: scale(1) translateY(0);
+  transform: translateY(0);
 }
 
 .viewer-header {
@@ -245,7 +237,7 @@ select {
 
 .viewer-stage {
   flex: 1;
-  min-height: 350px;
+  min-height: 0;
   background: var(--color-bg);
   position: relative;
   display: flex;
@@ -437,12 +429,6 @@ select {
 
   .gallery-grid {
     grid-template-columns: 1fr;
-  }
-
-  .viewer-container {
-    width: 96vw;
-    max-height: 95vh;
-    border-radius: var(--radius-lg);
   }
 
   .viewer-controls {

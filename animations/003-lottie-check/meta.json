@@ -1,8 +1,0 @@
-{
-  "id": "003-lottie-check",
-  "name": "Success Checkmark",
-  "description": "An animated checkmark for success states, using Lottie for cross-platform reuse.",
-  "type": "lottie",
-  "tags": ["checkmark", "success", "icon"],
-  "created": "2026-07-21"
-}

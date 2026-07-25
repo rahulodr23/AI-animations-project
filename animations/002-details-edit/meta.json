@@ -1,5 +1,5 @@
 {
-  "id": "005-details-edit",
+  "id": "002-details-edit",
   "name": "Details Edit Split",
   "description": "A details card that splits into jelly-bouncy editable fields on edit, then merges back on save or cancel.",
   "type": "gsap",

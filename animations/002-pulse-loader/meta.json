@@ -1,8 +1,0 @@
-{
-  "id": "002-pulse-loader",
-  "name": "Pulse Loader",
-  "description": "A minimal loading animation with three pulsing dots, built with pure CSS.",
-  "type": "css",
-  "tags": ["loader", "dots", "pulse"],
-  "created": "2026-07-21"
-}

@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Country Swipe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f3f3f5;
+      font-family: 'DM Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .frame {
+      width: min(340px, calc(100vw - 32px));
+      aspect-ratio: 3 / 4;
+      background: #ffffff;
+      border-radius: 36px;
+      box-shadow:
+        0 4px 6px rgba(15, 23, 42, 0.04),
+        0 18px 40px rgba(15, 23, 42, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .deck {
+      position: relative;
+      width: 58%;
+      aspect-ratio: 9 / 16;
+      perspective: 1200px;
+      perspective-origin: 50% 50%;
+    }
+
+    .card {
+      position: absolute;
+      inset: 0;
+      border-radius: 0;
+      display: flex;
+      align-items: flex-end;
+      color: #fff;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+      will-change: transform, opacity;
+      cursor: grab;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .card:active {
+      cursor: grabbing;
+    }
+
+    .card.is-animating {
+      cursor: default;
+      pointer-events: none;
+    }
+
+    /* Soft top-corner light bloom — gives the gradient depth */
+    .card-light {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background:
+        radial-gradient(120% 70% at 18% -4%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.05) 42%, transparent 65%),
+        radial-gradient(90% 55% at 92% 108%, rgba(0, 0, 0, 0.38) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* Small country flag — top left */
+    .card-flag {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      z-index: 3;
+      width: 24px;
+      border-radius: 3px;
+      overflow: hidden;
+      box-shadow:
+        0 1px 4px rgba(0, 0, 0, 0.28),
+        inset 0 0 0 0.5px rgba(255, 255, 255, 0.28);
+      pointer-events: none;
+    }
+
+    .card-flag svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* Fine film grain over the whole card */
+    .card-grain {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      opacity: 0.05;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+
+    /* Legibility scrim behind the caption */
+    .card-caption {
+      position: relative;
+      z-index: 3;
+      width: 100%;
+      padding: 44px 16px 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.34) 100%);
+      transform: translateZ(1px);
+    }
+
+    .card-name {
+      font-size: clamp(16px, 4.6vw, 20px);
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      line-height: 1.05;
+      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+    }
+
+    /* Hairline inner border — premium print feel */
+    .card::after {
+      content: '';
+      position: absolute;
+      inset: 7px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+  </style>
+</head>
+<body>
+  <!-- Shared defs: film grain -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="grainFilter">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" />
+        <feColorMatrix type="saturate" values="0" />
+      </filter>
+    </defs>
+  </svg>
+
+  <div class="frame" id="frame">
+    <div class="deck" id="deck" aria-live="polite"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script>
+    /* Country flags — simple accurate SVGs, viewBox 0 0 3 2 */
+    const flags = {
+      Germany: '<svg viewBox="0 0 3 2"><rect width="3" height="2" fill="#000"/><rect y="0.667" width="3" height="0.667" fill="#DD0000"/><rect y="1.333" width="3" height="0.667" fill="#FFCE00"/></svg>',
+      France: '<svg viewBox="0 0 3 2"><rect width="1" height="2" fill="#002395"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#ED2939"/></svg>',
+      Italy: '<svg viewBox="0 0 3 2"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg>',
+      Spain: '<svg viewBox="0 0 3 2"><rect width="3" height="2" fill="#AA151B"/><rect y="0.5" width="3" height="1" fill="#F1BF00"/></svg>',
+      Portugal: '<svg viewBox="0 0 3 2"><rect width="3" height="2" fill="#FF0000"/><rect width="1.2" height="2" fill="#006600"/><circle cx="1.2" cy="1" r="0.36" fill="#FFCC00"/><circle cx="1.2" cy="1" r="0.22" fill="#FF0000"/></svg>',
+      Netherlands: '<svg viewBox="0 0 3 2"><rect width="3" height="2" fill="#21468B"/><rect width="3" height="1.333" fill="#fff"/><rect width="3" height="0.667" fill="#AE1C28"/></svg>',
+      Sweden: '<svg viewBox="0 0 3 2"><rect width="3" height="2" fill="#006AA7"/><rect x="0.9" width="0.4" height="2" fill="#FECC00"/><rect y="0.8" width="3" height="0.4" fill="#FECC00"/></svg>',
+      Norway: '<svg viewBox="0 0 3 2"><rect width="3" height="2" fill="#BA0C2F"/><rect x="0.8" width="0.6" height="2" fill="#fff"/><rect y="0.7" width="3" height="0.6" fill="#fff"/><rect x="0.95" width="0.3" height="2" fill="#00205B"/><rect y="0.85" width="3" height="0.3" fill="#00205B"/></svg>',
+      Poland: '<svg viewBox="0 0 3 2"><rect width="3" height="2" fill="#DC143C"/><rect width="3" height="1" fill="#fff"/></svg>',
+      Greece: '<svg viewBox="0 0 3 2"><rect width="3" height="2" fill="#0D5EAF"/><rect y="0.222" width="3" height="0.222" fill="#fff"/><rect y="0.667" width="3" height="0.222" fill="#fff"/><rect y="1.111" width="3" height="0.222" fill="#fff"/><rect y="1.556" width="3" height="0.222" fill="#fff"/><rect width="1.111" height="1.111" fill="#0D5EAF"/><rect x="0.444" width="0.222" height="1.111" fill="#fff"/><rect y="0.444" width="1.111" height="0.222" fill="#fff"/></svg>',
+      Austria: '<svg viewBox="0 0 3 2"><rect width="3" height="2" fill="#ED2939"/><rect y="0.667" width="3" height="0.667" fill="#fff"/></svg>',
+      Belgium: '<svg viewBox="0 0 3 2"><rect width="1" height="2" fill="#000"/><rect x="1" width="1" height="2" fill="#FDDA24"/><rect x="2" width="1" height="2" fill="#EF3340"/></svg>',
+      Switzerland: '<svg viewBox="0 0 3 2"><rect width="3" height="2" fill="#DA291C"/><rect x="1.3" y="0.4" width="0.4" height="1.2" fill="#fff"/><rect x="0.9" y="0.8" width="1.2" height="0.4" fill="#fff"/></svg>',
+      Denmark: '<svg viewBox="0 0 3 2"><rect width="3" height="2" fill="#C8102E"/><rect x="0.85" width="0.35" height="2" fill="#fff"/><rect y="0.825" width="3" height="0.35" fill="#fff"/></svg>',
+      Ireland: '<svg viewBox="0 0 3 2"><rect width="1" height="2" fill="#169B62"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#FF883E"/></svg>',
+      Finland: '<svg viewBox="0 0 3 2"><rect width="3" height="2" fill="#fff"/><rect x="0.8" width="0.5" height="2" fill="#003580"/><rect y="0.75" width="3" height="0.5" fill="#003580"/></svg>',
+      Czechia: '<svg viewBox="0 0 3 2"><rect width="3" height="2" fill="#D7141A"/><rect width="3" height="1" fill="#fff"/><path d="M0 0l1.5 1L0 2z" fill="#11457E"/></svg>',
+      Hungary: '<svg viewBox="0 0 3 2"><rect width="3" height="2" fill="#436F4D"/><rect width="3" height="1.333" fill="#fff"/><rect width="3" height="0.667" fill="#CD2A3E"/></svg>',
+    };
+
+    // Rich three-stop gradients with a slight hue shift — deeper, less flat
+    const countries = [
+      { name: 'Germany', gradient: 'linear-gradient(168deg, #8b5cf6 0%, #5b21c9 48%, #2a1170 100%)' },
+      { name: 'France', gradient: 'linear-gradient(168deg, #60a5fa 0%, #2c5cd4 48%, #122a7a 100%)' },
+      { name: 'Italy', gradient: 'linear-gradient(168deg, #fb8b7a 0%, #d43d52 48%, #6e1030 100%)' },
+      { name: 'Spain', gradient: 'linear-gradient(168deg, #fbbf5d 0%, #e0692a 48%, #7c2d12 100%)' },
+      { name: 'Portugal', gradient: 'linear-gradient(168deg, #3fd9a3 0%, #0f9d6e 48%, #064e3b 100%)' },
+      { name: 'Netherlands', gradient: 'linear-gradient(168deg, #fb9d4b 0%, #dc5c1e 48%, #77260c 100%)' },
+      { name: 'Sweden', gradient: 'linear-gradient(168deg, #4cc3f7 0%, #1b7fc4 48%, #093a5e 100%)' },
+      { name: 'Norway', gradient: 'linear-gradient(168deg, #a78bfa 0%, #6947d4 48%, #271e6b 100%)' },
+      { name: 'Poland', gradient: 'linear-gradient(168deg, #f472b6 0%, #ce3a80 48%, #6e0f3a 100%)' },
+      { name: 'Greece', gradient: 'linear-gradient(168deg, #5eead4 0%, #14a3b8 48%, #0b4a5e 100%)' },
+      { name: 'Austria', gradient: 'linear-gradient(168deg, #f89f9f 0%, #cf4a4a 48%, #641414 100%)' },
+      { name: 'Belgium', gradient: 'linear-gradient(168deg, #f5d34d 0%, #c98a1e 48%, #6b420c 100%)' },
+      { name: 'Switzerland', gradient: 'linear-gradient(168deg, #fb7185 0%, #d13a5c 48%, #6e0f28 100%)' },
+      { name: 'Denmark', gradient: 'linear-gradient(168deg, #6ee7a0 0%, #23a05c 48%, #123f24 100%)' },
+      { name: 'Ireland', gradient: 'linear-gradient(168deg, #4ade80 0%, #1c9e50 48%, #0e4a26 100%)' },
+      { name: 'Finland', gradient: 'linear-gradient(168deg, #93c5fd 0%, #4874dd 48%, #1a2f78 100%)' },
+      { name: 'Czechia', gradient: 'linear-gradient(168deg, #c4b5fd 0%, #7c4fd8 48%, #3b1687 100%)' },
+      { name: 'Hungary', gradient: 'linear-gradient(168deg, #fda4af 0%, #d44a63 48%, #7a0e2b 100%)' },
+    ];
+
+    const deck = document.getElementById('deck');
+    const EXIT_THRESHOLD = 90;
+    const SWAP_DURATION = 0.62;
+    const SWAP_EASE = 'power3.inOut'; // snap-back
+    const FINISH_EASE = 'power3.out'; // exit: no slowdown at the box edge
+    const SETTLE_ANGLE = 5;
+
+    let index = 0;
+    let cardEl = null;
+    let previewEl = null;
+    let dragging = false;
+    let animating = false;
+    let startX = 0;
+    let currentX = 0;
+    let swapT = 0;
+    let swapDir = 1;
+    let lastMoveX = 0;
+    let lastMoveT = 0;
+    let velocityX = 0;
+    let activeTween = null;
+
+    function countryAt(i) {
+      return countries[((i % countries.length) + countries.length) % countries.length];
+    }
+
+    function createCard(data) {
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.style.background = data.gradient;
+      el.innerHTML = `
+        <div class="card-light" aria-hidden="true"></div>
+        <svg class="card-grain" aria-hidden="true"><rect width="100%" height="100%" filter="url(#grainFilter)" /></svg>
+        <div class="card-flag" aria-hidden="true">${flags[data.name] || ''}</div>
+        <div class="card-caption">
+          <span class="card-name">${data.name}</span>
+        </div>
+      `;
+      el.setAttribute('role', 'img');
+      el.setAttribute('aria-label', data.name);
+      return el;
+    }
+
+    function showCard(i) {
+      const el = createCard(countryAt(i));
+      deck.innerHTML = '';
+      deck.appendChild(el);
+      cardEl = el;
+      previewEl = null;
+      swapT = 0;
+      gsap.set(el, { x: 0, rotateY: 0, opacity: 1, transformPerspective: 1200 });
+      bindCard(el);
+    }
+
+    function bindCard(el) {
+      el.addEventListener('pointerdown', onPointerDown);
+    }
+
+    function layoutMetrics() {
+      const frameEl = document.getElementById('frame');
+      const cardW = deck.offsetWidth;
+      const sidePad = (frameEl.offsetWidth - cardW) / 2;
+      const travel = sidePad + cardW + 40;
+      return { cardW, sidePad, frameW: frameEl.offsetWidth, travel };
+    }
+
+    // ONE progress value drives every property on both cards in lockstep
+    function applySwapProgress(outEl, inEl, dir, t, { skipInRotate = false } = {}) {
+      const { travel } = layoutMetrics();
+      const p = Math.max(0, Math.min(1, t));
+
+      gsap.set(outEl, {
+        x: dir * travel * p,
+        rotateY: dir * 90 * p,
+        opacity: 1 - p,
+        transformPerspective: 1200,
+      });
+
+      if (inEl) {
+        const props = {
+          x: -dir * travel * (1 - p),
+          opacity: p > 0.02 ? 1 : 0,
+          transformPerspective: 1200,
+        };
+        if (!skipInRotate) {
+          props.rotateY = -dir * 90 * (1 - p);
+        }
+        gsap.set(inEl, props);
+      }
+    }
+
+    function ensurePreview(dir) {
+      if (previewEl) return previewEl;
+      const el = createCard(countryAt(index + 1));
+      el.classList.add('is-animating');
+      el.style.pointerEvents = 'none';
+      deck.appendChild(el);
+      previewEl = el;
+      return el;
+    }
+
+    function clearPreview() {
+      if (!previewEl) return;
+      previewEl.remove();
+      previewEl = null;
+    }
+
+    function onPointerDown(e) {
+      if (animating || !cardEl) return;
+      dragging = true;
+      startX = e.clientX;
+      currentX = 0;
+      swapT = 0;
+      lastMoveX = 0;
+      lastMoveT = performance.now();
+      velocityX = 0;
+      cardEl.setPointerCapture(e.pointerId);
+      if (activeTween) {
+        activeTween.kill();
+        activeTween = null;
+      }
+      gsap.killTweensOf(cardEl);
+      if (previewEl) gsap.killTweensOf(previewEl);
+
+      cardEl.addEventListener('pointermove', onPointerMove);
+      cardEl.addEventListener('pointerup', onPointerUp);
+      cardEl.addEventListener('pointercancel', onPointerUp);
+    }
+
+    function onPointerMove(e) {
+      if (!dragging || !cardEl) return;
+      const now = performance.now();
+      const x = e.clientX - startX;
+      const dt = Math.max(1, now - lastMoveT);
+      velocityX = ((x - lastMoveX) / dt) * 1000;
+      lastMoveX = x;
+      lastMoveT = now;
+      currentX = x;
+
+      const { travel } = layoutMetrics();
+      swapDir = x === 0 ? swapDir : Math.sign(x);
+      swapT = Math.max(0, Math.min(1, Math.abs(x) / travel));
+
+      if (swapT > 0.03) {
+        ensurePreview(swapDir);
+      } else {
+        clearPreview();
+      }
+
+      applySwapProgress(cardEl, previewEl, swapDir, swapT);
+    }
+
+    function onPointerUp() {
+      if (!dragging || !cardEl) return;
+      dragging = false;
+
+      cardEl.removeEventListener('pointermove', onPointerMove);
+      cardEl.removeEventListener('pointerup', onPointerUp);
+      cardEl.removeEventListener('pointercancel', onPointerUp);
+
+      const flick = Math.abs(velocityX) > 900;
+      const willExit = swapT * layoutMetrics().travel >= EXIT_THRESHOLD
+        || (flick && Math.abs(currentX) > 40);
+
+      if (willExit) {
+        finishSwap(swapDir || Math.sign(velocityX) || 1);
+      } else {
+        snapBack();
+      }
+    }
+
+    function animateProgress(fromT, toT, dir, outEl, inEl, onDone, ease = SWAP_EASE) {
+      const state = { t: fromT };
+      const remain = Math.abs(toT - fromT);
+      const duration = Math.max(0.3, SWAP_DURATION * remain);
+
+      if (activeTween) activeTween.kill();
+
+      activeTween = gsap.to(state, {
+        t: toT,
+        duration,
+        ease,
+        onUpdate() {
+          swapT = state.t;
+          applySwapProgress(outEl, inEl, dir, state.t);
+        },
+        onComplete() {
+          activeTween = null;
+          onDone(outEl, inEl);
+        },
+      });
+    }
+
+    function snapBack() {
+      animating = true;
+      cardEl.classList.add('is-animating');
+      const dir = swapDir || 1;
+      const outEl = cardEl;
+      const inEl = previewEl;
+
+      animateProgress(swapT, 0, dir, outEl, inEl, () => {
+        clearPreview();
+        gsap.set(cardEl, { x: 0, rotateY: 0, opacity: 1 });
+        cardEl.classList.remove('is-animating');
+        animating = false;
+        swapT = 0;
+      }, SWAP_EASE);
+    }
+
+    function finishSwap(dir) {
+      animating = true;
+
+      const outEl = cardEl;
+      outEl.classList.add('is-animating');
+
+      if (!previewEl) ensurePreview(dir);
+      const inEl = previewEl;
+      previewEl = null;
+      index += 1;
+      inEl.classList.add('is-animating');
+
+      const startRot = Number(gsap.getProperty(inEl, 'rotateY'))
+        || (-dir * 90 * (1 - swapT));
+      const overshoot = dir * SETTLE_ANGLE; // opposite tip, then settle to flat (0°)
+      const remain = Math.max(0.001, 1 - swapT);
+      const swapDur = Math.max(0.3, SWAP_DURATION * remain);
+      const settleDur = 0.42;
+      const state = { t: swapT };
+
+      if (activeTween) activeTween.kill();
+
+      // Lock starting angle so rotation continues from here (no pause at 0°)
+      gsap.set(inEl, { rotateY: startRot, transformPerspective: 1200 });
+
+      // One continuous motion: slide in while Y-rotation keeps going past flat
+      // into a slight opposite tip, then eases to 0°
+      const tl = gsap.timeline({
+        onComplete() {
+          activeTween = null;
+          gsap.set(inEl, { x: 0, rotateY: 0, opacity: 1 });
+          cardEl = inEl;
+          cardEl.style.pointerEvents = '';
+          cardEl.classList.remove('is-animating');
+          animating = false;
+          swapT = 0;
+          bindCard(cardEl);
+        },
+      });
+      activeTween = tl;
+
+      tl.to(state, {
+        t: 1,
+        duration: swapDur,
+        ease: FINISH_EASE,
+        onUpdate() {
+          swapT = state.t;
+          applySwapProgress(outEl, inEl, dir, state.t, { skipInRotate: true });
+        },
+      }, 0);
+
+      tl.to(inEl, {
+        keyframes: [
+          { rotateY: overshoot, duration: swapDur, ease: FINISH_EASE },
+          { rotateY: 0, duration: settleDur, ease: 'power3.out' },
+        ],
+      }, 0);
+
+      tl.set(inEl, { x: 0, opacity: 1 }, swapDur);
+      tl.call(() => { if (outEl.parentNode) outEl.remove(); }, null, swapDur);
+    }
+
+    // Initial entrance — continuous opposite tip, then settle flat
+    showCard(0);
+    animating = true;
+    cardEl.classList.add('is-animating');
+    gsap.fromTo(
+      cardEl,
+      { rotateY: 90, x: 160, opacity: 0, transformPerspective: 1200 },
+      {
+        keyframes: [
+          {
+            rotateY: -SETTLE_ANGLE,
+            x: 0,
+            opacity: 1,
+            duration: 0.65,
+            ease: 'power3.out',
+          },
+          {
+            rotateY: 0,
+            duration: 0.42,
+            ease: 'power3.out',
+          },
+        ],
+        delay: 0.08,
+        onComplete() {
+          cardEl.classList.remove('is-animating');
+          animating = false;
+        },
+      }
+    );
+  </script>
+</body>
+</html>

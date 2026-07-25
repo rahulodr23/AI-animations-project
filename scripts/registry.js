@@ -27,4 +27,12 @@ export const animations = [
     tags: ['login', 'fluid', 'glow', 'micro-interaction', 'success'],
     folder: '/animations/003-login-user',
   },
+  {
+    id: '004-country-swipe',
+    name: 'Country Swipe',
+    description: 'Swipe a 9:16 country card out of a soft-shadow frame — it rotates 90° on its vertical axis as the next European destination spins in.',
+    type: 'gsap',
+    tags: ['swipe', 'card', '3d', 'rotate', 'countries', 'drag'],
+    folder: '/animations/004-country-swipe',
+  },
 ];

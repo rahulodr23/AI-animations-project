@@ -1,0 +1,8 @@
+{
+  "id": "005-guardian-angel",
+  "name": "The Guardian Angel",
+  "description": "A halftone angel poster card with 3D hover tilt — the side under your cursor dips away, wings flap slowly, and the backlight glow drifts left to right.",
+  "type": "gsap",
+  "tags": ["3d", "tilt", "hover", "card", "poster", "glow"],
+  "created": "2026-07-27"
+}

@@ -43,4 +43,12 @@ export const animations = [
     tags: ['3d', 'tilt', 'hover', 'card', 'poster', 'glow'],
     folder: '/animations/005-guardian-angel',
   },
+  {
+    id: '006-tiger-cat',
+    name: 'Tiger Cat',
+    description: 'An orange tiger-striped cat matching a flat illustration — the white sparkles inside its pupils follow your cursor.',
+    type: 'css-js',
+    tags: ['cat', 'eyes', 'cursor', 'tiger', 'illustration'],
+    folder: '/animations/006-tiger-cat',
+  },
 ];

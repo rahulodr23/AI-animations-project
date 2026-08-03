@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tiger Cat</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          #f2f0ee 0px,
+          #f2f0ee 1px,
+          #eeecea 1px,
+          #eeecea 22px
+        );
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: default;
+    }
+
+    .stage {
+      width: min(440px, 90vw);
+      aspect-ratio: 440 / 500;
+    }
+
+    .cat {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    .glint {
+      will-change: transform;
+    }
+
+    .tail {
+      transform-origin: 292px 390px;
+      transform-box: view-box;
+      animation: tail-wiggle 3.8s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    @keyframes tail-wiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(3deg); }
+      50% { transform: rotate(-1deg); }
+      75% { transform: rotate(-2.5deg); }
+    }
+
+    .ground {
+      stroke: #c5c1bd;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      fill: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" aria-label="Orange tiger cat — eye sparkles follow your cursor">
+    <svg class="cat" viewBox="0 0 440 500" role="img" aria-labelledby="cat-title">
+      <title id="cat-title">Orange cat</title>
+
+      <!-- Ground -->
+      <line class="ground" x1="100" y1="414" x2="340" y2="414" />
+
+      <!-- Tail — slow gentle wiggle -->
+      <path
+        class="tail"
+        fill="#f07828"
+        d="M292 390
+           C 330 390, 358 378, 362 342
+           C 366 308, 350 286, 328 284
+           C 314 283, 308 294, 312 306
+           C 320 330, 318 358, 298 372
+           C 292 376, 290 382, 292 390 Z"
+      />
+
+      <!-- Body — unchanged shape -->
+      <path
+        fill="#f07828"
+        d="M148 255 L292 255 L304 412 L136 412 Z"
+      />
+
+      <!-- Front paws — slightly thinner -->
+      <g class="paws">
+        <!-- Left paw fill -->
+        <path
+          fill="#f07828"
+          d="M166 355
+             V 396
+             C 166 408, 172 414, 184 414
+             H 206
+             C 218 414, 224 408, 224 396
+             V 355
+             Z"
+        />
+        <path
+          fill="none"
+          stroke="#8a4a22"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M166 368
+             V 396
+             C 166 408, 172 414, 184 414
+             H 206
+             C 218 414, 224 408, 224 396
+             V 368"
+        />
+        <path fill="#e06820" opacity="0.3" d="M214 360 V 400 C 214 408, 220 412, 224 412 V 360 Z" />
+        <line x1="184" y1="398" x2="184" y2="410" stroke="#8a4a22" stroke-width="2.2" stroke-linecap="round" />
+        <line x1="206" y1="398" x2="206" y2="410" stroke="#8a4a22" stroke-width="2.2" stroke-linecap="round" />
+
+        <!-- Right paw fill -->
+        <path
+          fill="#f07828"
+          d="M216 355
+             V 396
+             C 216 408, 222 414, 234 414
+             H 256
+             C 268 414, 274 408, 274 396
+             V 355
+             Z"
+        />
+        <path
+          fill="none"
+          stroke="#8a4a22"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M216 368
+             V 396
+             C 216 408, 222 414, 234 414
+             H 256
+             C 268 414, 274 408, 274 396
+             V 368"
+        />
+        <path fill="#e06820" opacity="0.3" d="M216 360 V 412 C 220 412, 226 408, 226 400 V 360 Z" />
+        <line x1="234" y1="398" x2="234" y2="410" stroke="#8a4a22" stroke-width="2.2" stroke-linecap="round" />
+        <line x1="256" y1="398" x2="256" y2="410" stroke="#8a4a22" stroke-width="2.2" stroke-linecap="round" />
+      </g>
+
+      <!-- Ears -->
+      <path fill="#f07828" d="M118 188 L142 128 L166 188 Z" />
+      <path fill="#f07828" d="M274 188 L298 128 L322 188 Z" />
+      <path d="M134 168 L142 148 L150 168" fill="none" stroke="#111111" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M290 168 L298 148 L306 168" fill="none" stroke="#111111" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+
+      <!-- Head -->
+      <ellipse cx="220" cy="210" rx="138" ry="72" fill="#f07828" />
+
+      <!-- Eyes: fixed white sclera; pupil + glint track the cursor -->
+      <circle cx="178" cy="210" r="42" fill="#ffffff" />
+      <g id="pupil-l">
+        <circle cx="178" cy="210" r="28" fill="#1a1a1a" />
+        <ellipse class="glint" id="glint-l" cx="178" cy="210" rx="9" ry="7" fill="#ffffff" />
+      </g>
+
+      <circle cx="262" cy="210" r="42" fill="#ffffff" />
+      <g id="pupil-r">
+        <circle cx="262" cy="210" r="28" fill="#1a1a1a" />
+        <ellipse class="glint" id="glint-r" cx="262" cy="210" rx="9" ry="7" fill="#ffffff" />
+      </g>
+
+      <!-- Nose -->
+      <path d="M220 236 L212 248 L228 248 Z" fill="#1a1a1a" />
+
+      <!-- Fixed small W mouth -->
+      <line x1="220" y1="248" x2="220" y2="252" stroke="#1a1a1a" stroke-width="2.8" stroke-linecap="round" />
+      <path fill="none" stroke="#1a1a1a" stroke-width="2.8" stroke-linecap="round" d="M220 252 Q 211 259 204 255" />
+      <path fill="none" stroke="#1a1a1a" stroke-width="2.8" stroke-linecap="round" d="M220 252 Q 229 259 236 255" />
+
+      <!-- Whiskers: two per side (matches illustration) -->
+      <g stroke="#1a1a1a" stroke-width="2" stroke-linecap="round">
+        <line x1="68" y1="214" x2="102" y2="218" />
+        <line x1="68" y1="230" x2="102" y2="230" />
+        <line x1="372" y1="214" x2="338" y2="218" />
+        <line x1="372" y1="230" x2="338" y2="230" />
+      </g>
+    </svg>
+  </div>
+
+  <script>
+    const svg = document.querySelector('.cat');
+
+    const WHITE_R = 42;
+    const PUPIL_R = 28;
+    const GLINT_R = 9; // use the wider oval radius so it stays inside the pupil
+    // Beyond this distance from eye center, elements sit fully toward the rim
+    const FAR_DIST = 160;
+    // Pupil only travels a small fraction of the room inside the white eye
+    const PUPIL_SUBTLE = 0.22;
+
+    const EYES = [
+      {
+        cx: 178,
+        cy: 210,
+        pupil: document.getElementById('pupil-l'),
+        glint: document.getElementById('glint-l'),
+      },
+      {
+        cx: 262,
+        cy: 210,
+        pupil: document.getElementById('pupil-r'),
+        glint: document.getElementById('glint-r'),
+      },
+    ];
+
+    function toSvgPoint(clientX, clientY) {
+      const pt = svg.createSVGPoint();
+      pt.x = clientX;
+      pt.y = clientY;
+      const ctm = svg.getScreenCTM();
+      if (!ctm) return { x: 220, y: 210 };
+      return pt.matrixTransform(ctm.inverse());
+    }
+
+    function rimFactor(dist) {
+      // Over the pupil area → 0 (centered); farther → up to 1 (on the rim)
+      if (dist <= PUPIL_R) return 0;
+      return Math.min(1, (dist - PUPIL_R) / (FAR_DIST - PUPIL_R));
+    }
+
+    function moveEyes(clientX, clientY) {
+      const cursor = toSvgPoint(clientX, clientY);
+      const pupilMax = (WHITE_R - PUPIL_R - 1) * PUPIL_SUBTLE;
+      const glintMax = PUPIL_R - GLINT_R - 1;
+
+      for (const eye of EYES) {
+        const dx = cursor.x - eye.cx;
+        const dy = cursor.y - eye.cy;
+        const dist = Math.hypot(dx, dy);
+        const factor = rimFactor(dist);
+
+        if (dist < 0.001 || factor === 0) {
+          eye.pupil.setAttribute('transform', 'translate(0 0)');
+          eye.glint.setAttribute('transform', 'translate(0 0)');
+          continue;
+        }
+
+        const ux = dx / dist;
+        const uy = dy / dist;
+
+        // Black pupil — same idea, very subtle
+        eye.pupil.setAttribute(
+          'transform',
+          `translate(${ux * pupilMax * factor} ${uy * pupilMax * factor})`
+        );
+
+        // White glint — full travel inside the pupil
+        eye.glint.setAttribute(
+          'transform',
+          `translate(${ux * glintMax * factor} ${uy * glintMax * factor})`
+        );
+      }
+    }
+
+    window.addEventListener('pointermove', (e) => {
+      moveEyes(e.clientX, e.clientY);
+    });
+
+    moveEyes(window.innerWidth / 2, window.innerHeight / 2);
+  </script>
+</body>
+</html>

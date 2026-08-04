@@ -51,4 +51,12 @@ export const animations = [
     tags: ['cat', 'eyes', 'cursor', 'tiger', 'illustration'],
     folder: '/animations/006-tiger-cat',
   },
+  {
+    id: '007-star-rating',
+    name: 'Star Rating',
+    description: 'Hover a rating to highlight it, then click — stars fly up from the option and fill the row above with a left-to-right stagger. Click anywhere to reset.',
+    type: 'gsap',
+    tags: ['stars', 'rating', 'hover', 'micro-interaction', 'fly'],
+    folder: '/animations/007-star-rating',
+  },
 ];

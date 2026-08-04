@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Star Rating</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,500;9..40,700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --page-bg: #eae7e2;
+      --box-bg: #f4f2ef;
+      --star-empty: #DBDBDB;
+      --text: #424242;
+      --text-muted: #8a8680;
+      --accent-a: #6224FF;
+      --accent-b: #3200B1;
+      --accent-grad: linear-gradient(135deg, var(--accent-a) 0%, var(--accent-b) 100%);
+      --font-size: 24px;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--page-bg);
+      font-family: 'DM Sans', sans-serif;
+      font-size: var(--font-size);
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: default;
+      overflow: hidden;
+      padding: 24px;
+    }
+
+    body.is-rated {
+      cursor: pointer;
+    }
+
+    .box {
+      position: relative;
+      width: min(480px, 100%);
+      background: var(--box-bg);
+      border: 1px solid rgba(28, 28, 28, 0.08);
+      border-radius: 24px;
+      box-shadow:
+        0 1px 2px rgba(28, 28, 28, 0.04),
+        0 12px 40px rgba(28, 28, 28, 0.08);
+    }
+
+    .scene {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 48px;
+      padding: 56px 40px 48px;
+    }
+
+    /* Prompt sits 12px under the rating options */
+    .scene .prompt {
+      margin-top: calc(12px - 48px);
+    }
+
+    /* Shared SVG defs (hidden) */
+    .defs-svg {
+      position: absolute;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+    }
+
+    /* ── Top stars ───────────────────────────── */
+    .stars-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .big-star {
+      position: relative;
+      width: 44px;
+      height: 44px;
+    }
+
+    .big-star svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .big-star .star-base {
+      fill: var(--star-empty);
+      filter: url(#starInnerShadow);
+    }
+
+    .big-star .star-fill {
+      fill: url(#starGrad);
+      opacity: 0;
+      filter: url(#starInnerShadow);
+    }
+
+    .big-star.is-filled .star-fill {
+      opacity: 1;
+    }
+
+    /* ── Rating options ──────────────────────── */
+    .options-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 28px;
+    }
+
+    .option {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 4px 2px 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .option:focus-visible .option-label {
+      outline: 2px solid var(--accent-a);
+      outline-offset: 4px;
+      border-radius: 4px;
+    }
+
+    .option-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-size: var(--font-size);
+      letter-spacing: -0.02em;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .option-label .num {
+      line-height: 1;
+      font-weight: 700;
+      color: var(--text);
+      background: none;
+      -webkit-background-clip: border-box;
+      background-clip: border-box;
+      /* No transition — gradient text + color tween causes a hover-out fumble */
+    }
+
+    .option-label .mini-star {
+      width: 18px;
+      height: 18px;
+      display: block;
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+
+    .option-label .mini-star path {
+      fill: var(--text);
+    }
+
+    /* Hover — gradient only when no rating is locked in */
+    body:not(.is-rated):not(.is-animating) .option:hover .option-label .num {
+      background: var(--accent-grad);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    body:not(.is-rated):not(.is-animating) .option:hover .option-label .mini-star path {
+      fill: url(#starGrad);
+    }
+
+    /* After rating — no hover chrome, not interactive until outside click */
+    body.is-rated .option .option-label .num,
+    body.is-animating .option .option-label .num,
+    body.is-rated .option:hover .option-label .num,
+    body.is-animating .option:hover .option-label .num {
+      background: none !important;
+      -webkit-background-clip: border-box !important;
+      background-clip: border-box !important;
+      color: var(--text) !important;
+    }
+
+    body.is-rated .option .option-label .mini-star path,
+    body.is-animating .option .option-label .mini-star path,
+    body.is-rated .option:hover .option-label .mini-star path,
+    body.is-animating .option:hover .option-label .mini-star path {
+      fill: var(--text) !important;
+    }
+
+    body.is-rated .option,
+    body.is-animating .option {
+      cursor: default;
+    }
+
+    /* ── Prompt ──────────────────────────────── */
+    .prompt {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    /* ── Flying stars (viewport overlay) ─ */
+    .fly-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+      overflow: hidden;
+    }
+
+    .fly-star {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      padding: 0;
+      pointer-events: none;
+    }
+
+    .fly-star svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      shape-rendering: geometricPrecision;
+    }
+
+    .fly-star path {
+      fill: #6224FF;
+    }
+  </style>
+</head>
+<body>
+  <svg class="defs-svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#6224FF" />
+        <stop offset="100%" stop-color="#3200B1" />
+      </linearGradient>
+
+      <!-- Slight inset shadow for the top stars -->
+      <filter id="starInnerShadow" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+        <feComponentTransfer in="SourceAlpha">
+          <feFuncA type="table" tableValues="1 0" />
+        </feComponentTransfer>
+        <feGaussianBlur stdDeviation="0.7" />
+        <feOffset dx="0" dy="0.25" result="offsetblur" />
+        <feFlood flood-color="#000000" flood-opacity="0.2" result="color" />
+        <feComposite in2="offsetblur" operator="in" />
+        <feComposite in2="SourceAlpha" operator="in" />
+        <feMerge>
+          <feMergeNode in="SourceGraphic" />
+          <feMergeNode />
+        </feMerge>
+      </filter>
+    </defs>
+  </svg>
+
+  <div class="box" id="box">
+    <div class="scene" id="scene">
+      <div class="stars-row" id="starsRow" aria-hidden="true">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="options-row" id="optionsRow" role="radiogroup" aria-label="Rate your experience">
+        <!-- filled by JS -->
+      </div>
+
+      <p class="prompt">Rate your experience</p>
+    </div>
+  </div>
+
+  <div class="fly-layer" id="flyLayer" aria-hidden="true"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script>
+    const STAR_PATH =
+      'M12 1.5l2.85 5.78 6.38.93-4.61 4.5 1.09 6.35L12 16.1l-5.71 3.01 1.09-6.35-4.61-4.5 6.38-.93L12 1.5z';
+
+    const COUNT = 5;
+    const starsRow = document.getElementById('starsRow');
+    const optionsRow = document.getElementById('optionsRow');
+    const flyLayer = document.getElementById('flyLayer');
+
+    let rating = 0;
+    let animating = false;
+    let activeTl = null;
+
+    function starSvg() {
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path class="star-base" d="${STAR_PATH}" />
+          <path class="star-fill" d="${STAR_PATH}" />
+        </svg>
+      `;
+    }
+
+    function miniStarSvg() {
+      return `
+        <svg class="mini-star" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="${STAR_PATH}" />
+        </svg>
+      `;
+    }
+
+    for (let i = 0; i < COUNT; i++) {
+      const el = document.createElement('div');
+      el.className = 'big-star';
+      el.dataset.index = String(i);
+      el.innerHTML = starSvg();
+      starsRow.appendChild(el);
+    }
+
+    for (let i = 1; i <= COUNT; i++) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'option';
+      btn.dataset.value = String(i);
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', 'false');
+      btn.setAttribute('aria-label', `${i} star${i > 1 ? 's' : ''}`);
+      btn.innerHTML = `
+        <span class="option-label">
+          <span class="num">${i}</span>${miniStarSvg()}
+        </span>
+      `;
+      optionsRow.appendChild(btn);
+    }
+
+    const bigStars = [...starsRow.querySelectorAll('.big-star')];
+    const options = [...optionsRow.querySelectorAll('.option')];
+
+    function setActiveOption(value) {
+      options.forEach((opt) => {
+        const on = Number(opt.dataset.value) === value;
+        opt.classList.toggle('is-active', on);
+        opt.setAttribute('aria-checked', on ? 'true' : 'false');
+      });
+    }
+
+    function fillBigStar(index, show) {
+      const star = bigStars[index];
+      if (!star) return;
+      star.classList.toggle('is-filled', show);
+    }
+
+    function createFlyer() {
+      const el = document.createElement('div');
+      el.className = 'fly-star';
+      el.innerHTML = `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="${STAR_PATH}" />
+        </svg>
+      `;
+      flyLayer.appendChild(el);
+      return el;
+    }
+
+    function centerOf(el) {
+      const r = el.getBoundingClientRect();
+      return {
+        x: r.left + r.width / 2,
+        y: r.top + r.height / 2,
+        w: r.width,
+        h: r.height,
+      };
+    }
+
+    function setOptionsLocked(locked) {
+      options.forEach((opt) => {
+        // Don't use the disabled attribute — it drops click events and
+        // lets "outside click" reset fire when pressing on a number.
+        opt.setAttribute('aria-disabled', locked ? 'true' : 'false');
+        opt.tabIndex = locked ? -1 : 0;
+      });
+    }
+
+    function playRating(value) {
+      if (animating || rating > 0) return;
+
+      animating = true;
+      rating = value;
+      // Lock hover/clicks immediately — unlock only after outside click reset
+      document.body.classList.add('is-animating', 'is-rated');
+      setOptionsLocked(true);
+      setActiveOption(0);
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+
+      const option = options[value - 1];
+      const mini = option.querySelector('.mini-star');
+      const origin = centerOf(mini);
+
+      if (activeTl) activeTl.kill();
+      flyLayer.innerHTML = '';
+
+      const tl = gsap.timeline({
+        onComplete: () => {
+          animating = false;
+          document.body.classList.remove('is-animating');
+          document.body.classList.add('is-rated');
+          setActiveOption(0);
+          activeTl = null;
+        },
+      });
+      activeTl = tl;
+
+      for (let i = 0; i < value; i++) {
+        const target = centerOf(bigStars[i]);
+        const flyer = createFlyer();
+
+        // Native size = big star, so the final frame is sharp at scale:1
+        // (scaling a tiny star up is what looked blurry before)
+        const endSize = target.w;
+        const startScale = origin.w / endSize;
+        flyer.style.width = `${endSize}px`;
+        flyer.style.height = `${endSize}px`;
+
+        gsap.set(flyer, {
+          x: Math.round(origin.x),
+          y: Math.round(origin.y),
+          xPercent: -50,
+          yPercent: -50,
+          scale: startScale,
+          force3D: false,
+        });
+
+        tl.to(
+          flyer,
+          {
+            x: Math.round(target.x),
+            y: Math.round(target.y),
+            scale: 1,
+            duration: 0.34,
+            ease: 'power2.out',
+            force3D: false,
+            onComplete: () => {
+              fillBigStar(i, true);
+              flyer.remove();
+            },
+          },
+          i * 0.06
+        );
+      }
+    }
+
+    function resetRating() {
+      if (animating || rating === 0) return;
+
+      if (activeTl) {
+        activeTl.kill();
+        activeTl = null;
+      }
+      flyLayer.innerHTML = '';
+
+      for (let i = 0; i < COUNT; i++) {
+        fillBigStar(i, false);
+      }
+
+      rating = 0;
+      setActiveOption(0);
+      setOptionsLocked(false);
+      document.body.classList.remove('is-rated', 'is-animating');
+      animating = false;
+    }
+
+    options.forEach((opt) => {
+      opt.addEventListener('click', (e) => {
+        // Swallow number clicks while rated — do not reset, do not re-rate
+        e.preventDefault();
+        e.stopPropagation();
+        if (rating > 0 || animating) return;
+        if (opt.getAttribute('aria-disabled') === 'true') return;
+        playRating(Number(opt.dataset.value));
+      });
+    });
+
+    optionsRow.addEventListener('mousedown', (e) => {
+      if (rating > 0 || animating) e.stopPropagation();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (rating === 0 || animating) return;
+      // Deselect only when clicking outside the number row
+      if (optionsRow.contains(e.target)) return;
+      resetRating();
+    });
+
+    gsap.from('.big-star', {
+      opacity: 0,
+      y: 10,
+      scale: 0.9,
+      duration: 0.45,
+      stagger: 0.04,
+      ease: 'power2.out',
+      delay: 0.05,
+    });
+    gsap.from('.option', {
+      opacity: 0,
+      y: 8,
+      duration: 0.4,
+      stagger: 0.04,
+      ease: 'power2.out',
+      delay: 0.15,
+    });
+    gsap.from('.prompt', {
+      opacity: 0,
+      y: 6,
+      duration: 0.4,
+      ease: 'power2.out',
+      delay: 0.28,
+    });
+  </script>
+</body>
+</html>

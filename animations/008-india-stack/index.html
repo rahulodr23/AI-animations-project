@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>India Stack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #fafafa;
+      font-family: 'Playfair Display', Georgia, serif;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .stage {
+      width: min(100vw, 640px);
+      height: min(86vh, 860px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+    }
+
+    .deck {
+      position: relative;
+      width: min(300px, calc(100vw - 64px));
+      aspect-ratio: 465 / 720;
+      perspective: 1600px;
+      perspective-origin: 50% 50%;
+    }
+
+    .card {
+      position: absolute;
+      inset: 0;
+      transform-style: preserve-3d;
+      will-change: transform;
+      cursor: grab;
+    }
+
+    .card.is-front {
+      cursor: grab;
+    }
+
+    .card.is-front:active {
+      cursor: grabbing;
+    }
+
+    .card:not(.is-front) {
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .card.is-animating,
+    .card.is-animating.is-front {
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .card-flip {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+    }
+
+    .face {
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #b5b5b5;
+      border: 11px solid #e7e7e7;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      transform-style: preserve-3d;
+    }
+
+    .face.back {
+      transform: rotateY(180deg);
+    }
+
+    .photo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    .face.back .photo {
+      transform: scaleX(-1);
+    }
+
+    .scrim {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.2) 0%,
+        rgba(0, 0, 0, 0.2) 82%,
+        #000 100%
+      );
+      pointer-events: none;
+    }
+
+    .label {
+      position: absolute;
+      left: 50%;
+      bottom: 48px;
+      transform: translateX(-50%);
+      color: #fff;
+      font-size: clamp(28px, 9vw, 42px);
+      font-weight: 400;
+      line-height: 1;
+      white-space: nowrap;
+      text-align: center;
+      pointer-events: none;
+      text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div class="deck" id="deck" aria-live="polite"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script>
+    const destinations = [
+      { name: 'Himachal', image: './assets/himachal.png' },
+      { name: 'Delhi', image: './assets/delhi.png' },
+      { name: 'Mumbai', image: './assets/mumbai.png' },
+      { name: 'Rajasthan', image: './assets/rajasthan.png' },
+      { name: 'Goa', image: './assets/goa.png' },
+      { name: 'Kerala', image: './assets/kerala.png' },
+    ];
+
+    // Fan angles from Figma — front → back
+    const FAN = [3, -3, 6, -6, 9, -9];
+
+    const SWIPE_THRESHOLD_DEG = 90; // must pass 90° Y-rotation to send to back
+    const MAX_DRAG = 260; // px maps to full 180° flip progress
+    const EXIT_X = 340; // how far the card flies out before tucking behind
+    const SNAP_EASE = 'power3.out';
+    const COMMIT_EASE = 'power2.inOut';
+
+    const deck = document.getElementById('deck');
+
+    /** @type {{ el: HTMLElement, flip: HTMLElement, data: object }[]} */
+    let cards = [];
+    let order = []; // indices into cards, order[0] = front
+    let dragging = false;
+    let animating = false;
+    let startX = 0;
+    let currentX = 0;
+    let progress = 0;
+    let direction = 1;
+    let lastMoveX = 0;
+    let lastMoveT = 0;
+    let velocityX = 0;
+    let activeTween = null;
+
+    function createCard(data) {
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.setAttribute('role', 'img');
+      el.setAttribute('aria-label', data.name);
+      el.innerHTML = `
+        <div class="card-flip">
+          <div class="face front">
+            <img class="photo" src="${data.image}" alt="" draggable="false" />
+            <div class="scrim" aria-hidden="true"></div>
+            <span class="label">${data.name}</span>
+          </div>
+          <div class="face back">
+            <img class="photo" src="${data.image}" alt="" draggable="false" />
+            <div class="scrim" aria-hidden="true"></div>
+            <span class="label">${data.name}</span>
+          </div>
+        </div>
+      `;
+      return {
+        el,
+        flip: el.querySelector('.card-flip'),
+        data,
+      };
+    }
+
+    function depthOf(cardIndex) {
+      return order.indexOf(cardIndex);
+    }
+
+    function stackProps(depth) {
+      const d = Math.max(0, Math.min(FAN.length - 1, depth));
+      return {
+        rotateZ: FAN[d],
+        zIndex: FAN.length - d,
+        scale: 1 - d * 0.012,
+        y: d * 1.5,
+      };
+    }
+
+    function applyStackLayout(immediate = false) {
+      order.forEach((cardIndex, depth) => {
+        const card = cards[cardIndex];
+        const props = stackProps(depth);
+        const isFront = depth === 0;
+
+        card.el.classList.toggle('is-front', isFront);
+        card.el.style.zIndex = String(props.zIndex);
+
+        if (immediate) {
+          gsap.set(card.el, {
+            rotateZ: props.rotateZ,
+            scale: props.scale,
+            y: props.y,
+            x: 0,
+            transformPerspective: 1600,
+          });
+          gsap.set(card.flip, {
+            rotateY: 0,
+            x: 0,
+            transformPerspective: 1600,
+          });
+        }
+      });
+    }
+
+    function frontCard() {
+      return cards[order[0]];
+    }
+
+    function bindFront() {
+      const front = frontCard();
+      if (!front) return;
+      front.el.addEventListener('pointerdown', onPointerDown);
+    }
+
+    function unbindFront() {
+      const front = frontCard();
+      if (!front) return;
+      front.el.removeEventListener('pointerdown', onPointerDown);
+    }
+
+    function onPointerDown(e) {
+      if (animating || dragging) return;
+      const front = frontCard();
+      if (!front || e.button === 2) return;
+
+      dragging = true;
+      startX = e.clientX;
+      currentX = 0;
+      progress = 0;
+      velocityX = 0;
+      lastMoveX = 0;
+      lastMoveT = performance.now();
+
+      if (activeTween) {
+        activeTween.kill();
+        activeTween = null;
+      }
+      gsap.killTweensOf(front.el);
+      gsap.killTweensOf(front.flip);
+
+      front.el.setPointerCapture(e.pointerId);
+      front.el.addEventListener('pointermove', onPointerMove);
+      front.el.addEventListener('pointerup', onPointerUp);
+      front.el.addEventListener('pointercancel', onPointerUp);
+    }
+
+    function onPointerMove(e) {
+      if (!dragging) return;
+      const front = frontCard();
+      if (!front) return;
+
+      const now = performance.now();
+      const x = e.clientX - startX;
+      const dt = Math.max(1, now - lastMoveT);
+      velocityX = ((x - lastMoveX) / dt) * 1000;
+      lastMoveX = x;
+      lastMoveT = now;
+      currentX = x;
+
+      direction = x === 0 ? direction : Math.sign(x);
+      progress = Math.max(0, Math.min(1, Math.abs(x) / MAX_DRAG));
+      applyDragPose(front, x, progress, direction);
+    }
+
+    /**
+     * Shared pose for drag + spring-back so x / rotateY / rotateZ stay locked together.
+     */
+    function applyDragPose(card, x, p, dir) {
+      const t = Math.max(0, Math.min(1, p));
+      const rest = stackProps(0);
+
+      gsap.set(card.el, {
+        x,
+        y: rest.y - t * 8,
+        rotateZ: rest.rotateZ * (1 - t * 0.9) + dir * t * 6,
+        scale: rest.scale + t * 0.03,
+        transformPerspective: 1600,
+      });
+
+      gsap.set(card.flip, {
+        rotateY: dir * 180 * t,
+        transformPerspective: 1600,
+      });
+    }
+
+    function onPointerUp() {
+      if (!dragging) return;
+      dragging = false;
+
+      const front = frontCard();
+      if (!front) return;
+
+      front.el.removeEventListener('pointermove', onPointerMove);
+      front.el.removeEventListener('pointerup', onPointerUp);
+      front.el.removeEventListener('pointercancel', onPointerUp);
+
+      const rotateY = direction * 180 * progress;
+      // Only send to the back if the card has flipped past 90°
+      const willCommit = Math.abs(rotateY) > SWIPE_THRESHOLD_DEG;
+
+      if (willCommit) {
+        commitSwipe(direction || 1);
+      } else {
+        springBack();
+      }
+    }
+
+    function springBack() {
+      const front = frontCard();
+      if (!front) return;
+
+      animating = true;
+      front.el.classList.add('is-animating');
+
+      if (activeTween) activeTween.kill();
+
+      const fromX = Number(gsap.getProperty(front.el, 'x')) || currentX;
+      const fromY = Number(gsap.getProperty(front.el, 'y')) || 0;
+      const fromRotZ = Number(gsap.getProperty(front.el, 'rotateZ')) || 0;
+      const fromScale = Number(gsap.getProperty(front.el, 'scale')) || 1;
+      const fromRotY = Number(gsap.getProperty(front.flip, 'rotateY')) || 0;
+      const rest = stackProps(0);
+      const shrinkScale = rest.scale * 0.9; // 10% smaller while returning
+
+      const from = progress;
+      // Short drags snap back quickly; near-90° returns take a bit longer
+      const duration = 0.32 + from * 0.38;
+      const state = { t: 1 };
+
+      const tl = gsap.timeline({
+        onComplete() {
+          activeTween = null;
+          front.el.classList.remove('is-animating');
+          animating = false;
+          progress = 0;
+          currentX = 0;
+        },
+      });
+      activeTween = tl;
+
+      // Return to center while scaling down 10%
+      tl.to(state, {
+        t: 0,
+        duration,
+        ease: 'power3.out',
+        onUpdate() {
+          const t = state.t;
+          progress = from * t;
+          gsap.set(front.el, {
+            x: fromX * t,
+            y: rest.y + (fromY - rest.y) * t,
+            rotateZ: rest.rotateZ + (fromRotZ - rest.rotateZ) * t,
+            scale: shrinkScale + (fromScale - shrinkScale) * t,
+            transformPerspective: 1600,
+          });
+          gsap.set(front.flip, {
+            rotateY: fromRotY * t,
+            transformPerspective: 1600,
+          });
+        },
+        onComplete() {
+          gsap.set(front.el, {
+            x: 0,
+            y: rest.y,
+            rotateZ: rest.rotateZ,
+            scale: shrinkScale,
+          });
+          gsap.set(front.flip, { rotateY: 0 });
+        },
+      });
+
+      // Ease back up to full size once settled
+      tl.to(front.el, {
+        scale: rest.scale,
+        duration: 0.22,
+        ease: 'power2.out',
+      });
+    }
+
+    function commitSwipe(dir) {
+      const front = frontCard();
+      if (!front) return;
+
+      animating = true;
+      unbindFront();
+      front.el.classList.add('is-animating');
+
+      const outgoing = order[0];
+      const nextOrder = order.slice(1).concat(outgoing);
+      const backProps = stackProps(FAN.length - 1);
+
+      // Stay on top while flying out
+      front.el.style.zIndex = String(FAN.length + 2);
+
+      if (activeTween) activeTween.kill();
+
+      const startXPos = Number(gsap.getProperty(front.el, 'x')) || currentX;
+      const exitX = dir * Math.max(EXIT_X, Math.abs(startXPos) + 120);
+      const flyDur = 0.42;
+      const tuckDur = 0.55;
+
+      const tl = gsap.timeline({
+        onComplete() {
+          order = nextOrder;
+          gsap.set(front.flip, { rotateY: 0 });
+          applyStackLayout(true);
+          front.el.classList.remove('is-animating');
+          activeTween = null;
+          animating = false;
+          progress = 0;
+          currentX = 0;
+          bindFront();
+        },
+      });
+      activeTween = tl;
+
+      // 1) Fly out sideways while finishing the 180° Y flip — scale down 10%
+      tl.to(front.el, {
+        x: exitX,
+        y: -28,
+        rotateZ: dir * 14,
+        scale: 0.9,
+        duration: flyDur,
+        ease: 'power2.out',
+      }, 0);
+
+      tl.to(front.flip, {
+        rotateY: dir * 180,
+        duration: flyDur,
+        ease: 'power2.out',
+        transformPerspective: 1600,
+      }, 0);
+
+      // 2) Drop behind the stack, then arc back into the back slot
+      tl.call(() => {
+        front.el.style.zIndex = '1';
+      }, null, flyDur);
+
+      tl.to(front.el, {
+        x: 0,
+        y: backProps.y,
+        rotateZ: backProps.rotateZ,
+        scale: 0.9,
+        duration: tuckDur,
+        ease: COMMIT_EASE,
+      }, flyDur);
+
+      // Advance the rest of the stack toward the front while the card tucks in
+      nextOrder.forEach((cardIndex, depth) => {
+        if (cardIndex === outgoing) return;
+        const card = cards[cardIndex];
+        const props = stackProps(depth);
+        card.el.style.zIndex = String(props.zIndex);
+        tl.to(card.el, {
+          rotateZ: props.rotateZ,
+          scale: props.scale,
+          y: props.y,
+          duration: tuckDur,
+          ease: SNAP_EASE,
+        }, flyDur * 0.85);
+      });
+    }
+
+    function init() {
+      cards = destinations.map(createCard);
+      order = cards.map((_, i) => i);
+
+      cards.forEach((card) => deck.appendChild(card.el));
+      applyStackLayout(true);
+      bindFront();
+
+      // Soft entrance
+      animating = true;
+      cards.forEach((card, i) => {
+        const depth = depthOf(i);
+        const props = stackProps(depth);
+        gsap.fromTo(
+          card.el,
+          {
+            y: props.y + 40,
+            opacity: 0,
+            rotateZ: props.rotateZ * 1.6,
+            scale: props.scale * 0.92,
+          },
+          {
+            y: props.y,
+            opacity: 1,
+            rotateZ: props.rotateZ,
+            scale: props.scale,
+            duration: 0.7,
+            delay: 0.05 + depth * 0.05,
+            ease: 'power3.out',
+            onComplete() {
+              if (depth === FAN.length - 1) {
+                animating = false;
+              }
+            },
+          }
+        );
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

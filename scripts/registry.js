@@ -59,4 +59,12 @@ export const animations = [
     tags: ['stars', 'rating', 'hover', 'micro-interaction', 'fly'],
     folder: '/animations/007-star-rating',
   },
+  {
+    id: '008-india-stack',
+    name: 'India Stack',
+    description: 'Drag a Polaroid travel card left or right — it flips 180° on its Y axis and settles to the back of the stack, revealing the next destination.',
+    type: 'gsap',
+    tags: ['swipe', 'drag', '3d', 'cards', 'stack', 'india', 'flip'],
+    folder: '/animations/008-india-stack',
+  },
 ];

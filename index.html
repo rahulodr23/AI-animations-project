@@ -12,54 +12,31 @@
 </head>
 <body>
 
-  <!-- Header -->
-  <header class="site-header">
-    <h1><span>Anim</span>Playground</h1>
-    <span class="header-meta">0 animations</span>
-  </header>
+  <!-- Gallery screen -->
+  <div id="screen-gallery" class="screen">
+    <header class="site-header">
+      <h1><span>Anim</span>Playground</h1>
+      <span class="header-meta">0 animations</span>
+    </header>
 
-  <!-- Gallery -->
-  <main class="gallery">
-    <h2 class="gallery-title">Animation Library</h2>
-    <p class="gallery-subtitle">Click any animation to view it full-size, replay, record, or get the embed code.</p>
-    <div class="gallery-grid"></div>
-  </main>
-
-  <!-- Viewer (fullscreen) -->
-  <div class="viewer-overlay" id="viewer">
-    <div class="viewer-container">
-      <div class="viewer-header">
-        <span class="viewer-title"></span>
-        <button class="viewer-close" aria-label="Close">&times;</button>
-      </div>
-
-      <div class="viewer-stage"></div>
-
-      <div class="viewer-controls">
-        <button class="ctrl-btn primary" id="btn-replay">&#8635; Replay</button>
-        <button class="ctrl-btn" id="btn-record">&#9210; Record MP4</button>
-        <button class="ctrl-btn" id="btn-gif" disabled title="GIF export coming soon">GIF</button>
-        <span class="ctrl-spacer"></span>
-        <button class="ctrl-btn" id="btn-embed">&lt;/&gt; Embed</button>
-      </div>
-
-      <div class="export-panel">
-        <div class="export-panel-title">Embed / Export</div>
-        <div class="export-tabs">
-          <button class="export-tab active" data-tab="iframe">iframe</button>
-          <button class="export-tab" data-tab="link">Direct Link</button>
-          <button class="export-tab" data-tab="info">Usage Info</button>
-        </div>
-        <div class="export-code">
-          <button class="copy-btn">Copy</button>
-          <code></code>
-        </div>
-      </div>
-    </div>
+    <main class="gallery">
+      <h2 class="gallery-title">Animation Library</h2>
+      <p class="gallery-subtitle">Click any animation to view it full-size.</p>
+      <div class="gallery-grid"></div>
+    </main>
   </div>
 
-  <!-- Toast -->
-  <div class="toast" id="toast"></div>
+  <!-- Detail screen -->
+  <div id="screen-detail" class="screen screen-detail" hidden>
+    <header class="detail-header">
+      <button type="button" class="back-btn" id="btn-back" aria-label="Back to library">
+        <span class="back-btn-icon" aria-hidden="true">&#8592;</span>
+        Back
+      </button>
+      <span class="detail-title"></span>
+    </header>
+    <div class="detail-stage"></div>
+  </div>
 
   <script type="module">
     import { init } from '/scripts/gallery.js';

@@ -1,0 +1,11 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="ic:round-download">
+<path id="Vector" d="M55.6333 32H50.3333V15.3333C50.3333 13.5 48.8333 12 47 12H33.6667C31.8333 12 30.3333 13.5 30.3333 15.3333V32H25.0333C22.0667 32 20.5667 35.6 22.6667 37.7L37.9667 53C39.2667 54.3 41.3667 54.3 42.6667 53L57.9667 37.7C60.0667 35.6 58.6 32 55.6333 32ZM17 65.3333C17 67.1667 18.5 68.6667 20.3333 68.6667H60.3333C62.1667 68.6667 63.6667 67.1667 63.6667 65.3333C63.6667 63.5 62.1667 62 60.3333 62H20.3333C18.5 62 17 63.5 17 65.3333Z" fill="url(#paint0_linear_0_6)"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_6" x1="40.3333" y1="12" x2="40.3333" y2="68.6667" gradientUnits="userSpaceOnUse">
+<stop stop-color="white"/>
+<stop offset="1" stop-color="white" stop-opacity="0.6"/>
+</linearGradient>
+</defs>
+</svg>

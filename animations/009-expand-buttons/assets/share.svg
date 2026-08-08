@@ -1,0 +1,11 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="material-symbols:send-rounded">
+<path id="Vector" d="M15.6667 64.7716C14.5556 65.2161 13.5 65.1183 12.5 64.4783C11.5 63.8383 11 62.9083 11 61.6883V46.6883L37.6667 40.0216L11 33.3549V18.3549C11 17.1327 11.5 16.2027 12.5 15.5649C13.5 14.9272 14.5556 14.8294 15.6667 15.2716L67 36.9383C68.3889 37.5494 69.0833 38.5772 69.0833 40.0216C69.0833 41.4661 68.3889 42.4938 67 43.1049L15.6667 64.7716Z" fill="url(#paint0_linear_0_8)"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_8" x1="40.0417" y1="15" x2="40.0417" y2="65.0448" gradientUnits="userSpaceOnUse">
+<stop stop-color="white"/>
+<stop offset="1" stop-color="white" stop-opacity="0.6"/>
+</linearGradient>
+</defs>
+</svg>

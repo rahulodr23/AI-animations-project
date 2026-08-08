@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expand Buttons</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Tai+Heritage+Pro&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --collapsed-w: 154px;
+      --btn-h: 106px;
+      --icon-w: 138px;
+      --pad: 8px;
+      --shell: #101010;
+      --label-size: 41px;
+      --max-open-w: 378px;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      font-family: 'Tai Heritage Pro', Georgia, 'Times New Roman', serif;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      cursor: default;
+      padding: 24px;
+    }
+
+    /*
+      Stage is only as wide as the collapsed pill.
+      Body centers this footprint, so expand grows to the right
+      without shifting the icons left.
+    */
+    .stage {
+      width: var(--collapsed-w);
+      display: flex;
+      justify-content: flex-start;
+      overflow: visible;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 60px;
+      width: var(--max-open-w);
+    }
+
+    /* Outer dark pill — width animates from the left edge */
+    .action-btn {
+      position: relative;
+      display: block;
+      width: var(--collapsed-w);
+      height: var(--btn-h);
+      border: none;
+      padding: 0;
+      border-radius: 1000px;
+      background: var(--shell);
+      overflow: hidden;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+      box-shadow: inset 0 4px 4px rgba(255, 255, 255, 0.07);
+      will-change: width;
+      flex-shrink: 0;
+      transform-origin: left center;
+    }
+
+    .action-btn:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.35);
+      outline-offset: 4px;
+    }
+
+    /* Colored icon bubble — stays fixed on the left */
+    .icon-bubble {
+      position: absolute;
+      left: var(--pad);
+      top: var(--pad);
+      bottom: var(--pad);
+      width: var(--icon-w);
+      border-radius: 1000px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      pointer-events: none;
+      /* Twin inner-edge highlights — both orbit the rim on hover */
+      box-shadow:
+        inset var(--shadow-1-x, 0px) var(--shadow-1-y, 4px) 5px rgba(255, 255, 255, 0.35),
+        inset var(--shadow-2-x, 0px) var(--shadow-2-y, -4px) 5px rgba(255, 255, 255, 0.22);
+    }
+
+    .icon-bubble.download {
+      background: linear-gradient(180deg, #6d1fff 0%, #561399 100%);
+    }
+
+    .icon-bubble.copy {
+      background: linear-gradient(180deg, #ffb41f 0%, #996e13 100%);
+    }
+
+    .icon-bubble.share {
+      background: linear-gradient(180deg, #1f2aff 0%, #131999 100%);
+    }
+
+    /* Two stacked copies — clipped by the bubble for the exit/enter swap */
+    .icon-slot {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      flex-shrink: 0;
+    }
+
+    .icon-slot img {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 80px;
+      height: 80px;
+      display: block;
+      pointer-events: none;
+      will-change: transform;
+    }
+
+    /* Label sits to the right of the icon; clipped when collapsed */
+    .label {
+      position: absolute;
+      left: 166px;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      color: #fff;
+      font-family: 'Tai Heritage Pro', Georgia, 'Times New Roman', serif;
+      font-size: var(--label-size);
+      font-weight: 400;
+      line-height: 1;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      will-change: transform, opacity;
+    }
+
+    @media (max-width: 480px) {
+      .stage {
+        transform: scale(0.72);
+        transform-origin: center center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="stack" aria-label="Action buttons">
+      <button
+        class="action-btn"
+        type="button"
+        data-open-width="378"
+        aria-label="Download"
+      >
+        <span class="icon-bubble download" aria-hidden="true">
+          <span class="icon-slot">
+            <img src="./assets/download.svg" alt="" width="80" height="80" />
+            <img src="./assets/download.svg" alt="" width="80" height="80" />
+          </span>
+        </span>
+        <span class="label">Download</span>
+      </button>
+
+      <button
+        class="action-btn"
+        type="button"
+        data-open-width="296"
+        aria-label="Copy"
+      >
+        <span class="icon-bubble copy" aria-hidden="true">
+          <span class="icon-slot">
+            <img src="./assets/copy.svg" alt="" width="80" height="80" />
+            <img src="./assets/copy.svg" alt="" width="80" height="80" />
+          </span>
+        </span>
+        <span class="label">Copy</span>
+      </button>
+
+      <button
+        class="action-btn"
+        type="button"
+        data-open-width="300"
+        aria-label="Share"
+      >
+        <span class="icon-bubble share" aria-hidden="true">
+          <span class="icon-slot">
+            <img src="./assets/share.svg" alt="" width="80" height="80" />
+            <img src="./assets/share.svg" alt="" width="80" height="80" />
+          </span>
+        </span>
+        <span class="label">Share</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script>
+    const COLLAPSED = 154;
+    const EXPAND_EASE = 'back.out(1.55)';
+    const EXPAND_DUR = 0.55;
+    const ICON_TRAVEL = 96;
+    const ICON_DUR = 0.52;
+    const ICON_EASE = 'back.out(1.6)';
+    const SHADOW_RADIUS = 4;
+    const SHADOW_BLUR = 5;
+    const SHADOW_2_OFFSET = 180;
+    const buttons = Array.from(document.querySelectorAll('.action-btn'));
+    let openBtn = null;
+
+    function getLabel(btn) {
+      return btn.querySelector('.label');
+    }
+
+    function getBubble(btn) {
+      return btn.querySelector('.icon-bubble');
+    }
+
+    function getIcons(btn) {
+      const imgs = btn.querySelectorAll('.icon-slot img');
+      return { a: imgs[0], b: imgs[1] };
+    }
+
+    /** One inset highlight at angleDeg; second at +180°. 0° = top; increases clockwise. */
+    function applyInnerShadows(bubble, angleDeg) {
+      const rad1 = (angleDeg * Math.PI) / 180;
+      const rad2 = ((angleDeg + SHADOW_2_OFFSET) * Math.PI) / 180;
+
+      const x1 = Math.sin(rad1) * SHADOW_RADIUS;
+      const y1 = Math.cos(rad1) * SHADOW_RADIUS;
+      const x2 = Math.sin(rad2) * SHADOW_RADIUS;
+      const y2 = Math.cos(rad2) * SHADOW_RADIUS;
+
+      bubble.style.boxShadow = [
+        `inset ${x1.toFixed(2)}px ${y1.toFixed(2)}px ${SHADOW_BLUR}px rgba(255, 255, 255, 0.35)`,
+        `inset ${x2.toFixed(2)}px ${y2.toFixed(2)}px ${SHADOW_BLUR}px rgba(255, 255, 255, 0.22)`,
+      ].join(', ');
+    }
+
+    function startShadowSpin(btn) {
+      const bubble = getBubble(btn);
+      const state = bubble._shadowState || (bubble._shadowState = { angle: 0 });
+
+      gsap.killTweensOf(state);
+      gsap.to(state, {
+        angle: state.angle + 360,
+        duration: 1.4,
+        ease: 'none',
+        repeat: -1,
+        onUpdate() {
+          applyInnerShadows(bubble, state.angle);
+        },
+      });
+    }
+
+    function stopShadowSpin(btn) {
+      const bubble = getBubble(btn);
+      const state = bubble._shadowState || (bubble._shadowState = { angle: 0 });
+
+      gsap.killTweensOf(state);
+      gsap.to(state, {
+        angle: Math.round(state.angle / 360) * 360,
+        duration: EXPAND_DUR,
+        ease: EXPAND_EASE,
+        overwrite: true,
+        onUpdate() {
+          applyInnerShadows(bubble, state.angle);
+        },
+        onComplete() {
+          state.angle = 0;
+          applyInnerShadows(bubble, 0);
+        },
+      });
+    }
+
+    /** Hover in: current icon exits bottom, same icon enters from top */
+    function playIconIn(btn) {
+      const { a, b } = getIcons(btn);
+      gsap.killTweensOf([a, b]);
+
+      gsap.to(a, {
+        y: ICON_TRAVEL,
+        duration: ICON_DUR,
+        ease: ICON_EASE,
+        overwrite: true,
+      });
+
+      gsap.fromTo(
+        b,
+        { y: -ICON_TRAVEL },
+        {
+          y: 0,
+          duration: ICON_DUR,
+          ease: ICON_EASE,
+          overwrite: true,
+        }
+      );
+    }
+
+    /** Hover out: reverse — visible icon exits top, same icon enters from bottom */
+    function playIconOut(btn) {
+      const { a, b } = getIcons(btn);
+      gsap.killTweensOf([a, b]);
+
+      gsap.to(b, {
+        y: -ICON_TRAVEL,
+        duration: ICON_DUR,
+        ease: ICON_EASE,
+        overwrite: true,
+      });
+
+      gsap.to(a, {
+        y: 0,
+        duration: ICON_DUR,
+        ease: ICON_EASE,
+        overwrite: true,
+        onComplete() {
+          // Resting layout: A centered, B parked above
+          gsap.set(a, { y: 0 });
+          gsap.set(b, { y: -ICON_TRAVEL });
+        },
+      });
+    }
+
+    function collapse(btn) {
+      if (!btn) return;
+      const label = getLabel(btn);
+
+      gsap.killTweensOf([btn, label]);
+      stopShadowSpin(btn);
+      playIconOut(btn);
+
+      gsap.to(btn, {
+        width: COLLAPSED,
+        duration: EXPAND_DUR,
+        ease: EXPAND_EASE,
+        overwrite: true,
+      });
+
+      gsap.to(label, {
+        x: 36,
+        opacity: 0,
+        duration: 0.42,
+        ease: 'power3.in',
+        overwrite: true,
+      });
+    }
+
+    function expand(btn) {
+      const label = getLabel(btn);
+      const openWidth = Number(btn.dataset.openWidth);
+
+      gsap.killTweensOf([btn, label]);
+
+      gsap.to(btn, {
+        width: openWidth,
+        duration: EXPAND_DUR,
+        ease: EXPAND_EASE,
+        overwrite: true,
+      });
+
+      gsap.fromTo(
+        label,
+        { x: 36, opacity: 0 },
+        {
+          x: 0,
+          opacity: 0.7,
+          duration: 0.42,
+          delay: 0.06,
+          ease: 'power3.out',
+          overwrite: true,
+        }
+      );
+
+      playIconIn(btn);
+      startShadowSpin(btn);
+    }
+
+    buttons.forEach((btn) => {
+      const bubble = getBubble(btn);
+      const { a, b } = getIcons(btn);
+
+      bubble._shadowState = { angle: 0 };
+      applyInnerShadows(bubble, 0);
+      gsap.set(a, { y: 0 });
+      gsap.set(b, { y: -ICON_TRAVEL });
+      gsap.set(getLabel(btn), { x: 28, opacity: 0 });
+
+      btn.addEventListener('pointerenter', () => {
+        if (openBtn && openBtn !== btn) {
+          collapse(openBtn);
+        }
+        openBtn = btn;
+        expand(btn);
+      });
+
+      btn.addEventListener('pointerleave', () => {
+        if (openBtn === btn) {
+          collapse(btn);
+          openBtn = null;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

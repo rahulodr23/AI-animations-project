@@ -67,4 +67,12 @@ export const animations = [
     tags: ['swipe', 'drag', '3d', 'cards', 'stack', 'india', 'flip'],
     folder: '/animations/008-india-stack',
   },
+  {
+    id: '009-expand-buttons',
+    name: 'Expand Buttons',
+    description: 'Icon pills that expand right with a soft bounce to reveal their labels — rotating inner sheen on hover, same bounce on leave, one open at a time.',
+    type: 'gsap',
+    tags: ['buttons', 'hover', 'expand', 'bounce', 'micro-interaction'],
+    folder: '/animations/009-expand-buttons',
+  },
 ];

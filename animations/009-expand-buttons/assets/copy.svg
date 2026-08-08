@@ -1,0 +1,18 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="ion:copy-sharp">
+<g id="Union">
+<path d="M62.3916 25C63.0834 25.0001 63.7472 25.2745 64.2363 25.7637C64.7255 26.2528 64.9999 26.9166 65 27.6084V62.3916C64.9999 63.0834 64.7255 63.7472 64.2363 64.2363C63.7472 64.7255 63.0834 64.9999 62.3916 65H27.6084C26.9166 64.9999 26.2528 64.7255 25.7637 64.2363C25.2745 63.7472 25.0001 63.0834 25 62.3916V26.7393C25 26.278 25.1836 25.8359 25.5098 25.5098C25.8359 25.1836 26.278 25 26.7393 25H62.3916Z" fill="url(#paint0_linear_0_4)"/>
+<path d="M52.3916 15C53.0834 15.0001 53.7472 15.2745 54.2363 15.7637C54.7255 16.2528 54.9999 16.9166 55 17.6084V20.2178H23.6953C22.7729 20.2179 21.8885 20.5841 21.2363 21.2363C20.5841 21.8885 20.2179 22.7729 20.2178 23.6953V55H17.6084C16.9166 54.9999 16.2528 54.7255 15.7637 54.2363C15.2745 53.7472 15.0001 53.0834 15 52.3916V18.0439C15 17.2368 15.3208 16.4624 15.8916 15.8916C16.4624 15.3208 17.2368 15 18.0439 15H52.3916Z" fill="url(#paint1_linear_0_4)"/>
+</g>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_4" x1="40" y1="15" x2="40" y2="65" gradientUnits="userSpaceOnUse">
+<stop stop-color="white"/>
+<stop offset="1" stop-color="white" stop-opacity="0.6"/>
+</linearGradient>
+<linearGradient id="paint1_linear_0_4" x1="40" y1="15" x2="40" y2="65" gradientUnits="userSpaceOnUse">
+<stop stop-color="white"/>
+<stop offset="1" stop-color="white" stop-opacity="0.6"/>
+</linearGradient>
+</defs>
+</svg>

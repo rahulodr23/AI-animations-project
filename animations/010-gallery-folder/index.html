@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Gallery Folder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,600&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #f3f3f3;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      cursor: grab;
+    }
+
+    .stage.is-dragging { cursor: grabbing; }
+    .stage.is-folder { cursor: pointer; }
+    .stage.is-scrolling { cursor: grab; }
+    .stage.is-animating { cursor: default; }
+
+    .bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .bg-gallery {
+      background: linear-gradient(180deg, #4c28eb 0%, #2a00a9 100%);
+    }
+
+    .bg-folder {
+      background: #f3f3f3;
+      opacity: 0;
+    }
+
+    .fit {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 1526px;
+      height: 1000px;
+      margin-left: -763px;
+      margin-top: -500px;
+      transform-origin: center center;
+      will-change: transform;
+    }
+
+    .world {
+      position: absolute;
+      inset: 0;
+      transform-origin: 50% 48%;
+      will-change: transform;
+    }
+
+    /* Whole folder + photos — lands with a 90% → 100% scale bounce */
+    .folder-bundle {
+      position: absolute;
+      inset: 0;
+      transform-origin: 763.5px 500px;
+      will-change: transform;
+    }
+
+    .folder-back {
+      position: absolute;
+      left: 563.013px;
+      top: 338px;
+      width: 400.974px;
+      height: 323.593px;
+      border-radius: 22.511px;
+      background: linear-gradient(180deg, #4c28eb 0%, #2a00a9 100%);
+      opacity: 0;
+      transform: scale(1.16);
+      transform-origin: 50% 55%;
+      will-change: transform, opacity;
+      z-index: 1;
+      box-shadow: 0 18px 40px rgba(42, 0, 169, 0.18);
+    }
+
+    .photos {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+    }
+
+    .photo {
+      position: absolute;
+      width: 304px;
+      height: 304px;
+      border-radius: 20px;
+      border: 4px solid #f3f3f3;
+      overflow: hidden;
+      background: #2a00a9;
+      will-change: transform, width, height, border-radius;
+      transform-origin: 0 0;
+    }
+
+    .photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+
+    /* Figma 68:21 — folder front tab shape + white gradient only (no blur) */
+    .folder-front {
+      position: absolute;
+      left: 563.013px;
+      top: 405.532px;
+      width: 400.974px;
+      height: 257.468px;
+      z-index: 20;
+      opacity: 0;
+      transform: translateY(16px);
+      will-change: transform, opacity;
+      pointer-events: none;
+    }
+
+    .folder-front-fill {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        #5c37ff 0%,
+        rgba(58, 75, 255, 0.9) 100%
+      );
+      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400.974 257.468'%3E%3Cpath fill='white' d='M22.5109 257.468H378.463C390.896 257.468 400.974 247.389 400.974 234.957V63.4235C400.974 50.9911 390.896 40.9127 378.463 40.9127H147.242C140.126 40.9127 133.429 37.5482 129.181 31.8393L112.243 9.07338C107.995 3.36445 101.298 0 94.1825 0H22.5108C10.0784 0 0 10.0784 0 22.5108V234.957C0 247.389 10.0785 257.468 22.5109 257.468Z'/%3E%3C/svg%3E");
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400.974 257.468'%3E%3Cpath fill='white' d='M22.5109 257.468H378.463C390.896 257.468 400.974 247.389 400.974 234.957V63.4235C400.974 50.9911 390.896 40.9127 378.463 40.9127H147.242C140.126 40.9127 133.429 37.5482 129.181 31.8393L112.243 9.07338C107.995 3.36445 101.298 0 94.1825 0H22.5108C10.0784 0 0 10.0784 0 22.5108V234.957C0 247.389 10.0785 257.468 22.5109 257.468Z'/%3E%3C/svg%3E");
+      -webkit-mask-size: 100% 100%;
+      mask-size: 100% 100%;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      pointer-events: none;
+    }
+
+    .folder-front-stroke {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .label {
+      position: absolute;
+      left: 588px;
+      top: 603px;
+      color: #f3f3f3;
+      font-size: 28px;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+      opacity: 0;
+      z-index: 21;
+      pointer-events: none;
+      will-change: opacity, transform;
+      transform: translateY(8px);
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div class="bg bg-gallery"></div>
+    <div class="bg bg-folder" id="bgFolder"></div>
+
+    <div class="fit" id="fit">
+      <div class="world" id="world">
+        <div class="folder-bundle" id="folderBundle">
+          <div class="folder-back" id="folderBack"></div>
+          <div class="photos" id="photos"></div>
+          <div class="folder-front" id="folderFront">
+            <div class="folder-front-fill"></div>
+            <svg class="folder-front-stroke" viewBox="0 0 400.974 257.468" fill="none" aria-hidden="true">
+              <path
+                d="M22.5107 0.703125H94.1826C101.076 0.703149 107.564 3.96266 111.679 9.49316L128.617 32.2588C132.997 38.146 139.903 41.6161 147.241 41.6162H378.463C390.507 41.6162 400.271 51.38 400.271 63.4238V234.957C400.27 247.001 390.507 256.764 378.463 256.764H22.5107C10.467 256.764 0.703298 247.001 0.703125 234.957V22.5107C0.703157 10.4669 10.4669 0.703167 22.5107 0.703125Z"
+                stroke="rgba(255,255,255,0.5)"
+                stroke-width="1.40693"
+              />
+            </svg>
+          </div>
+          <div class="label" id="label">My gallery</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script>
+    /**
+     * Gallery Folder — scrollable 4-col gallery ↔ frosted folder
+     * Design space: 1526×1000 (widened from Figma 1000 for 4 columns)
+     */
+    const DESIGN_W = 1526;
+    const DESIGN_H = 1000;
+    const START_SIZE = 304;
+    const END_SIZE = 146.347;
+    const START_RADIUS = 20;
+    const END_RADIUS = 10;
+    const START_BORDER = 4;
+    const END_BORDER = 1;
+    const GAP = 50;
+    const COLS = 4;
+    const ROWS = 4;
+    const GRID_LEFT = 80;
+    const GRID_TOPS = [-169, 185, 539, 893];
+
+    // Folder stack anchors (original Figma ends, shifted to canvas center)
+    const OX = (DESIGN_W - 1000) / 2;
+    const FOLDER_ENDS = [
+      { ex: 331.000 + OX, ey: 380.000 },
+      { ex: 405.837 + OX, ey: 395.033 },
+      { ex: 350.957 + OX, ey: 425.843 },
+      { ex: 478.824 + OX, ey: 390.000 },
+      { ex: 523.300 + OX, ey: 425.843 },
+      { ex: 457.347 + OX, ey: 370.000 },
+      { ex: 350.957 + OX, ey: 443.174 },
+      { ex: 368.287 + OX, ey: 456.653 },
+      // Extra stack positions for the two new columns
+      { ex: 390.000 + OX, ey: 385.000 },
+      { ex: 440.000 + OX, ey: 410.000 },
+      { ex: 500.000 + OX, ey: 400.000 },
+      { ex: 360.000 + OX, ey: 415.000 },
+      { ex: 420.000 + OX, ey: 445.000 },
+      { ex: 480.000 + OX, ey: 435.000 },
+      { ex: 395.000 + OX, ey: 460.000 },
+      { ex: 455.000 + OX, ey: 455.000 },
+    ];
+
+    const PHOTO_SRCS = [
+      './assets/photo-01.png',
+      './assets/photo-02.png',
+      './assets/photo-03.png',
+      './assets/photo-04.png',
+      './assets/photo-05.png',
+      './assets/photo-06.png',
+      './assets/photo-07.png',
+      './assets/photo-08.png',
+      './assets/photo-09.jpg',
+      './assets/photo-10.jpg',
+      './assets/photo-11.jpg',
+      './assets/photo-12.jpg',
+      './assets/photo-13.jpg',
+      './assets/photo-14.jpg',
+      './assets/photo-15.jpg',
+      './assets/photo-16.jpg',
+    ];
+
+    // ~30% of photos fade out during collapse so the folder isn't overcrowded
+    const FADE_OUT_INDEXES = new Set([2, 5, 8, 11, 14]); // 5 of 16 ≈ 31%
+
+    // Build 4×4 gallery grid (row-major), map into folder stack
+    const PHOTOS = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const i = r * COLS + c;
+        const end = FOLDER_ENDS[i];
+        PHOTOS.push({
+          src: PHOTO_SRCS[i],
+          sx: GRID_LEFT + c * (START_SIZE + GAP),
+          sy: GRID_TOPS[r],
+          ex: end.ex,
+          ey: end.ey,
+          z: 3 + i,
+          fadeOut: FADE_OUT_INDEXES.has(i),
+        });
+      }
+    }
+
+    // Content extents in design space (top edge of top photos → bottom edge of bottom photos)
+    const CONTENT_TOP = Math.min(...PHOTOS.map((p) => p.sy));
+    const CONTENT_BOTTOM = Math.max(...PHOTOS.map((p) => p.sy)) + START_SIZE;
+
+    const stage = document.getElementById('stage');
+    const fit = document.getElementById('fit');
+    const world = document.getElementById('world');
+    const folderBundle = document.getElementById('folderBundle');
+    const photosRoot = document.getElementById('photos');
+    const bgFolder = document.getElementById('bgFolder');
+    const folderBack = document.getElementById('folderBack');
+    const folderFront = document.getElementById('folderFront');
+    const label = document.getElementById('label');
+
+    const photoEls = PHOTOS.map((p) => {
+      const el = document.createElement('div');
+      el.className = 'photo';
+      el.style.zIndex = String(p.z);
+      el.innerHTML = `<img src="${p.src}" alt="" draggable="false" />`;
+      photosRoot.appendChild(el);
+      return el;
+    });
+
+    /* Fit design width to viewport, then 30% smaller */
+    function fitStage() {
+      const s = (window.innerWidth / DESIGN_W) * 0.7;
+      fit.style.transform = `scale(${s})`;
+      return s;
+    }
+
+    /**
+     * Scroll range so you can align:
+     * - top edge of the top photos 20px below the viewport top
+     * - bottom edge of the bottom photos 20px above the viewport bottom
+     */
+    function getScrollBounds() {
+      const s = fitStage();
+      const viewH = window.innerHeight / s;
+      const margin = 20 / s; // 20px screen margin → design space
+      const midY = DESIGN_H / 2;
+      const viewTop = midY - viewH / 2;
+      const viewBottom = midY + viewH / 2;
+
+      const topAlign = viewTop + margin - CONTENT_TOP;
+      const bottomAlign = viewBottom - margin - CONTENT_BOTTOM;
+
+      return {
+        min: Math.min(topAlign, bottomAlign),
+        max: Math.max(topAlign, bottomAlign),
+      };
+    }
+
+    fitStage();
+    window.addEventListener('resize', () => {
+      fitStage();
+      const { min, max } = getScrollBounds();
+      if (state.mode === 'gallery' && state.progress < 0.02) {
+        state.scrollY = gsap.utils.clamp(min, max, state.scrollY);
+        proxy.scroll = state.scrollY;
+        render();
+      }
+    });
+
+    const state = {
+      progress: 0,
+      scrollY: 0,
+      mode: 'gallery', // gallery | folder
+    };
+
+    function smoothstep(t) {
+      const x = gsap.utils.clamp(0, 1, t);
+      return x * x * (3 - 2 * x);
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    /** Per-photo stagger along progress for a livelier rearrange */
+    function photoT(p, i) {
+      const lag = i * 0.02;
+      const span = 1 - lag * 0.45;
+      return smoothstep((p - lag * 0.12) / span);
+    }
+
+    /** Continuous land scale: 100% → 90% → 100% across the collapse */
+    function landScaleForProgress(p) {
+      const t = gsap.utils.clamp(0, 1, p);
+      // Dip through the middle of the gesture, recover as it finishes
+      if (t <= 0.72) {
+        return lerp(1, 0.9, smoothstep(t / 0.72));
+      }
+      return lerp(0.9, 1, smoothstep((t - 0.72) / 0.28));
+    }
+
+    function render() {
+      const p = gsap.utils.clamp(0, 1, state.progress);
+      const scrollFade = state.scrollY * (1 - p);
+
+      // Soft zoom-out on the world
+      gsap.set(world, { scale: lerp(1, 0.93, smoothstep(p)) });
+
+      // Folder + photos scale with the drag (not a delayed after-effect)
+      gsap.set(folderBundle, { scale: landScaleForProgress(p) });
+
+      // Background + folder pieces (folder snaps in a bit later)
+      const bgT = smoothstep((p - 0.35) / 0.45);
+      gsap.set(bgFolder, { opacity: bgT });
+
+      const backT = smoothstep((p - 0.32) / 0.4);
+      gsap.set(folderBack, {
+        opacity: backT,
+        scale: lerp(1.18, 1, backT),
+        transformOrigin: '50% 55%',
+      });
+
+      const frontT = smoothstep((p - 0.55) / 0.35);
+      gsap.set(folderFront, {
+        opacity: frontT,
+        y: lerp(22, 0, frontT),
+      });
+
+      const labelT = smoothstep((p - 0.68) / 0.28);
+      gsap.set(label, {
+        opacity: labelT,
+        y: lerp(10, 0, labelT),
+      });
+
+      photoEls.forEach((el, i) => {
+        const photo = PHOTOS[i];
+        const t = photoT(p, i);
+        const size = lerp(START_SIZE, END_SIZE, t);
+        const x = lerp(photo.sx, photo.ex, t);
+        const y = lerp(photo.sy, photo.ey, t) + scrollFade;
+        // Slight rotation wobble mid-flight (settles to 0 as photos arrive)
+        const wobble = Math.sin(t * Math.PI) * (i % 2 === 0 ? 3.5 : -2.8) * (1 - t);
+
+        // Fade ~30% of photos out mid-collapse so the folder stays uncluttered
+        let opacity = 1;
+        if (photo.fadeOut) {
+          opacity = 1 - smoothstep((p - 0.2) / 0.45);
+        }
+
+        gsap.set(el, {
+          x,
+          y,
+          width: size,
+          height: size,
+          borderRadius: lerp(START_RADIUS, END_RADIUS, t),
+          borderWidth: lerp(START_BORDER, END_BORDER, t),
+          borderStyle: 'solid',
+          borderColor: '#f3f3f3',
+          rotation: wobble,
+          opacity,
+          force3D: true,
+        });
+      });
+    }
+
+    let animating = false;
+    let gesture = null; // drag-collapse | scroll | pinch | tap | pending
+    let startY = 0;
+    let startX = 0;
+    let startProgress = 0;
+    let startScroll = 0;
+    let startPinchDist = 0;
+    let collapseOriginX = 0;
+    let collapseOriginY = 0;
+    let moved = false;
+    let activePointer = null;
+
+    const DRAG_DISTANCE = 280;
+    const PINCH_DELTA = 200;
+    const COMPLETE_AT = 0.28;
+    const TAP_SLOP = 8;
+    const SCROLL_INTENT = 6;
+
+    const proxy = { p: 0, scroll: 0 };
+
+    function setProgress(p) {
+      state.progress = gsap.utils.clamp(0, 1, p);
+      proxy.p = state.progress;
+      render();
+    }
+
+    function setScroll(y, withRubber = false) {
+      const { min, max } = getScrollBounds();
+      if (withRubber) {
+        if (y > max) {
+          const over = y - max;
+          y = max + over * 0.35;
+        } else if (y < min) {
+          const over = min - y;
+          y = min - over * 0.35;
+        }
+      } else {
+        y = gsap.utils.clamp(min, max, y);
+      }
+      state.scrollY = y;
+      proxy.scroll = y;
+      render();
+    }
+
+    function settleTo(target) {
+      if (animating) return;
+      animating = true;
+      stage.classList.add('is-animating');
+
+      const dist = Math.abs(target - state.progress);
+      // Opening (tap folder) a bit quicker than close, but not rushed
+      const dur = target === 0
+        ? Math.max(0.65, dist * 0.85)
+        : Math.max(0.85, dist * 1.4);
+
+      // Snap scroll toward 0 as we close into the folder
+      const bounds = getScrollBounds();
+      const scrollTarget = target === 1 ? 0 : gsap.utils.clamp(bounds.min, bounds.max, state.scrollY);
+
+      gsap.to(proxy, {
+        p: target,
+        scroll: scrollTarget,
+        duration: dur,
+        ease: target === 1 ? 'power3.out' : 'power2.out',
+        onUpdate: () => {
+          state.progress = gsap.utils.clamp(0, 1, proxy.p);
+          state.scrollY = proxy.scroll;
+          render();
+        },
+        onComplete: () => {
+          setProgress(target);
+          setScroll(scrollTarget, false);
+          state.mode = target === 1 ? 'folder' : 'gallery';
+          stage.classList.toggle('is-folder', state.mode === 'folder');
+          stage.classList.remove('is-animating');
+          animating = false;
+        },
+      });
+    }
+
+    function bounceScrollToBounds() {
+      const { min, max } = getScrollBounds();
+      if (state.scrollY > max || state.scrollY < min) {
+        const target = gsap.utils.clamp(min, max, state.scrollY);
+        gsap.to(proxy, {
+          scroll: target,
+          duration: 0.7,
+          ease: 'back.out(1.25)',
+          onUpdate: () => {
+            state.scrollY = proxy.scroll;
+            render();
+          },
+        });
+      }
+    }
+
+    function touchListDistance(touches) {
+      if (touches.length < 2) return 0;
+      const a = touches[0];
+      const b = touches[1];
+      return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    }
+
+    function designDeltaY(screenDy) {
+      const s = fitStage();
+      return screenDy / s;
+    }
+
+    function beginCollapse(originX, originY, progressBase) {
+      gesture = 'drag-collapse';
+      collapseOriginX = originX;
+      collapseOriginY = originY;
+      startProgress = progressBase;
+      stage.classList.remove('is-scrolling');
+      stage.classList.add('is-dragging');
+    }
+
+    function collapseDist(clientX, clientY) {
+      return Math.hypot(clientX - collapseOriginX, clientY - collapseOriginY);
+    }
+
+    /* ── Pointer: drag any direction = collapse; vertical drag scrolls when already scrolled ── */
+    stage.addEventListener('pointerdown', (e) => {
+      if (animating) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (gesture === 'pinch') return;
+
+      activePointer = e.pointerId;
+      startY = e.clientY;
+      startX = e.clientX;
+      startProgress = state.progress;
+      startScroll = state.scrollY;
+      collapseOriginX = e.clientX;
+      collapseOriginY = e.clientY;
+      moved = false;
+
+      if (state.mode === 'folder') {
+        gesture = 'tap';
+      } else if (state.progress > 0.02) {
+        beginCollapse(e.clientX, e.clientY, state.progress);
+      } else {
+        gesture = 'pending';
+      }
+
+      try { stage.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+
+    stage.addEventListener('pointermove', (e) => {
+      if (animating || e.pointerId !== activePointer) return;
+      if (gesture === 'pinch') return;
+
+      const dy = e.clientY - startY;
+      const dx = e.clientX - startX;
+      const dragDist = Math.hypot(dx, dy);
+      if (dragDist > TAP_SLOP) moved = true;
+
+      if (state.mode === 'folder') return;
+
+      if (gesture === 'pending') {
+        if (dragDist < SCROLL_INTENT) return;
+
+        const mostlyVertical = Math.abs(dy) > Math.abs(dx) * 1.1;
+        const awayFromRest = Math.abs(startScroll) > 12;
+
+        // Mid-scroll + vertical drag → browse gallery
+        // Otherwise (any direction, including up from rest) → collapse
+        if (mostlyVertical && awayFromRest) {
+          gesture = 'scroll';
+          stage.classList.add('is-scrolling');
+        } else {
+          beginCollapse(startX, startY, 0);
+        }
+      }
+
+      if (gesture === 'drag-collapse') {
+        setProgress(startProgress + collapseDist(e.clientX, e.clientY) / DRAG_DISTANCE);
+      } else if (gesture === 'scroll') {
+        const { min, max } = getScrollBounds();
+        const nextScroll = startScroll + designDeltaY(dy);
+
+        // Overscroll past either end → collapse in that drag direction
+        if (nextScroll > max + 40 || nextScroll < min - 40) {
+          setScroll(gsap.utils.clamp(min, max, nextScroll), false);
+          beginCollapse(e.clientX, e.clientY, 0);
+          const over = Math.max(nextScroll - max, min - nextScroll, 0);
+          setProgress((over * fitStage()) / DRAG_DISTANCE);
+        } else {
+          setScroll(nextScroll, true);
+        }
+      }
+    });
+
+    function endPointer(e) {
+      if (e && activePointer != null && e.pointerId !== activePointer) return;
+      if (gesture === 'pinch') return;
+
+      const was = gesture;
+      gesture = null;
+      stage.classList.remove('is-dragging', 'is-scrolling');
+      if (activePointer != null) {
+        try { stage.releasePointerCapture(activePointer); } catch (_) {}
+      }
+      activePointer = null;
+
+      if (animating) return;
+
+      if (state.mode === 'folder' && was === 'tap' && !moved) {
+        settleTo(0);
+        return;
+      }
+
+      if (was === 'drag-collapse' || (was === 'pending' && state.progress > 0.02)) {
+        if (state.progress >= COMPLETE_AT) settleTo(1);
+        else settleTo(0);
+        return;
+      }
+
+      if (was === 'scroll') {
+        bounceScrollToBounds();
+      }
+    }
+
+    stage.addEventListener('pointerup', endPointer);
+    stage.addEventListener('pointercancel', endPointer);
+
+    /* Wheel scroll in open gallery */
+    stage.addEventListener('wheel', (e) => {
+      if (animating || state.mode !== 'gallery' || state.progress > 0.02) return;
+      e.preventDefault();
+      setScroll(state.scrollY - designDeltaY(e.deltaY), true);
+      clearTimeout(stage._wheelBump);
+      stage._wheelBump = setTimeout(() => bounceScrollToBounds(), 80);
+    }, { passive: false });
+
+    /* Pinch → collapse */
+    stage.addEventListener('touchstart', (e) => {
+      if (animating || state.mode === 'folder') return;
+      if (e.touches.length === 2) {
+        gesture = 'pinch';
+        startPinchDist = touchListDistance(e.touches);
+        startProgress = state.progress;
+        stage.classList.add('is-dragging');
+        activePointer = null;
+      }
+    }, { passive: true });
+
+    stage.addEventListener('touchmove', (e) => {
+      if (animating || state.mode === 'folder') return;
+      if (gesture === 'pinch' && e.touches.length >= 2) {
+        const d = touchListDistance(e.touches);
+        setProgress(startProgress + (startPinchDist - d) / PINCH_DELTA);
+        moved = true;
+      }
+    }, { passive: true });
+
+    stage.addEventListener('touchend', (e) => {
+      if (gesture !== 'pinch') return;
+      if (e.touches.length < 2) {
+        gesture = null;
+        stage.classList.remove('is-dragging');
+        if (!animating && state.mode === 'gallery') {
+          if (state.progress >= COMPLETE_AT) settleTo(1);
+          else settleTo(0);
+        }
+      }
+    });
+
+    stage.addEventListener('touchcancel', () => {
+      if (gesture !== 'pinch') return;
+      gesture = null;
+      stage.classList.remove('is-dragging');
+      if (!animating && state.mode === 'gallery') {
+        if (state.progress >= COMPLETE_AT) settleTo(1);
+        else settleTo(0);
+      }
+    });
+
+    document.addEventListener('gesturestart', (e) => e.preventDefault());
+    document.addEventListener('gesturechange', (e) => e.preventDefault());
+
+    render();
+  </script>
+</body>
+</html>

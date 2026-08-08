@@ -75,4 +75,12 @@ export const animations = [
     tags: ['buttons', 'hover', 'expand', 'bounce', 'micro-interaction'],
     folder: '/animations/009-expand-buttons',
   },
+  {
+    id: '010-gallery-folder',
+    name: 'Gallery Folder',
+    description: 'Scroll the photo grid, then pull past the top or pinch — it bounces into a frosted blue folder. Tap to open again.',
+    type: 'gsap',
+    tags: ['gallery', 'folder', 'pinch', 'drag', 'photos', 'glassmorphism'],
+    folder: '/animations/010-gallery-folder',
+  },
 ];

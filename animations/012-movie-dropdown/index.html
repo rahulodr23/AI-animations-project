@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Movie Dropdown</title>
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #e4e4e4;
+      --surface: #f3f3f3;
+      --ink: #000000;
+      --line: rgba(0, 0, 0, 0.12);
+      --field-w: min(507px, calc(100vw - 32px));
+      --field-h: 78px;
+      --chamfer: 16px;
+      --radius-cut: 26px;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Clash Display', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      color: var(--ink);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      /* Sit the field in the upper half so the open menu has room below */
+      padding: max(24px, 22vh) 24px 24px;
+    }
+
+    /*
+      Stage is only as tall as the input field so body centering
+      never shifts when the menu opens beneath it.
+    */
+    .stage {
+      position: relative;
+      width: var(--field-w);
+      height: var(--field-h);
+    }
+
+    .field {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: var(--field-h);
+    }
+
+    /* Chamfered panel: cut top-left + bottom-right */
+    .panel {
+      position: relative;
+      background: var(--surface);
+      clip-path: polygon(
+        var(--chamfer) 0,
+        100% 0,
+        100% calc(100% - var(--chamfer)),
+        calc(100% - var(--chamfer)) 100%,
+        0 100%,
+        0 var(--chamfer)
+      );
+    }
+
+    .trigger {
+      width: 100%;
+      height: var(--field-h);
+      border: none;
+      background: transparent;
+      padding: 0 28px 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+    }
+
+    .trigger:focus-visible {
+      outline: 2px solid rgba(0, 0, 0, 0.25);
+      outline-offset: 4px;
+    }
+
+    .title-viewport {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      /* Tall enough for descenders (g, y) while still clipping letter swaps */
+      height: 1.45em;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+    }
+
+    .title-line {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      display: flex;
+      align-items: baseline;
+      white-space: nowrap;
+      font-size: 28px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      will-change: transform, filter, opacity;
+      pointer-events: none;
+    }
+
+    .title-line .char {
+      display: inline-block;
+      will-change: transform, filter, opacity;
+    }
+
+    .title-line .char.space {
+      width: 0.28em;
+    }
+
+    .chevron {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: rotate(180deg);
+      transform-origin: center;
+      will-change: transform;
+    }
+
+    .chevron img {
+      width: 44px;
+      height: 44px;
+      display: block;
+    }
+
+    .menu-wrap {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      z-index: 1;
+      overflow: hidden;
+      height: 0;
+      transform-origin: top center;
+      will-change: height, transform;
+    }
+
+    .menu {
+      width: 100%;
+      height: 100%;
+      padding: 24px 20px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+    }
+
+    .menu::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .menu::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.22);
+      border-radius: 999px;
+    }
+
+    .menu-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .menu-row + .menu-row {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .menu-item {
+      width: 100%;
+      border: none;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      text-align: left;
+      font-family: inherit;
+      font-size: 24px;
+      font-weight: 500;
+      line-height: 1.15;
+      color: var(--ink);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+      opacity: 0.88;
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .menu-item:hover,
+    .menu-item:focus-visible {
+      opacity: 1;
+      transform: translateX(2px);
+    }
+
+    .menu-item.is-selected {
+      opacity: 1;
+      font-weight: 600;
+    }
+
+    .menu-item:disabled {
+      cursor: default;
+      opacity: 1;
+    }
+
+    @media (max-width: 520px) {
+      .trigger {
+        padding: 0 18px 0 22px;
+        height: 68px;
+      }
+
+      .title-line { font-size: 22px; }
+      .menu { padding: 20px 16px; }
+      .menu-item { font-size: 20px; }
+      .chevron, .chevron img { width: 36px; height: 36px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div class="panel field">
+      <button
+        class="trigger"
+        id="trigger"
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded="false"
+        aria-controls="menu"
+      >
+        <span class="title-viewport" aria-live="polite">
+          <span class="title-line" id="titleCurrent"></span>
+          <span class="title-line" id="titleNext" aria-hidden="true"></span>
+        </span>
+        <span class="chevron" id="chevron" aria-hidden="true">
+          <img src="./assets/chevron.svg" alt="" />
+        </span>
+      </button>
+    </div>
+
+    <div class="menu-wrap" id="menuWrap">
+      <div class="panel menu" id="menuPanel">
+        <ul class="menu-list" id="menu" role="listbox" aria-label="Movies"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script>
+    const MOVIES = [
+      'John Wick',
+      'Avengers',
+      'The Fast & the Furious',
+      'Blade Runner',
+      'Mad Max: Fury Road',
+      'The Matrix',
+      'Interstellar',
+      'Inception',
+      'Die Hard',
+      'Mission: Impossible',
+      'Dune',
+      'Top Gun: Maverick',
+    ];
+
+    const trigger = document.getElementById('trigger');
+    const chevron = document.getElementById('chevron');
+    const menuWrap = document.getElementById('menuWrap');
+    const menuPanel = document.getElementById('menuPanel');
+    const menu = document.getElementById('menu');
+    const titleCurrent = document.getElementById('titleCurrent');
+    const titleNext = document.getElementById('titleNext');
+    const field = document.querySelector('.field');
+
+    let selected = MOVIES[0];
+    let open = false;
+    let busy = false;
+    let menuHeight = 0;
+    let openTween = null;
+    let swapTween = null;
+
+    function splitChars(el, text) {
+      el.textContent = '';
+      const frag = document.createDocumentFragment();
+      for (const ch of text) {
+        const span = document.createElement('span');
+        span.className = ch === ' ' ? 'char space' : 'char';
+        span.textContent = ch === ' ' ? '\u00A0' : ch;
+        frag.appendChild(span);
+      }
+      el.appendChild(frag);
+      return el.querySelectorAll('.char');
+    }
+
+    function renderMenu() {
+      menu.innerHTML = '';
+      MOVIES.forEach((name) => {
+        const li = document.createElement('li');
+        li.className = 'menu-row';
+        li.setAttribute('role', 'none');
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'menu-item' + (name === selected ? ' is-selected' : '');
+        btn.setAttribute('role', 'option');
+        btn.setAttribute('aria-selected', name === selected ? 'true' : 'false');
+        btn.textContent = name;
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectMovie(name);
+        });
+
+        li.appendChild(btn);
+        menu.appendChild(li);
+      });
+    }
+
+    function getAvailableMenuHeight() {
+      const fieldBottom = field.getBoundingClientRect().bottom;
+      return Math.max(140, window.innerHeight - fieldBottom - 24);
+    }
+
+    function measureMenu() {
+      const prev = menuWrap.style.height;
+      menuWrap.style.height = 'auto';
+      const natural = menuPanel.scrollHeight;
+      menuHeight = Math.min(natural, getAvailableMenuHeight());
+      menuWrap.style.height = prev;
+    }
+
+    function setTitleInstant(text) {
+      gsap.killTweensOf([titleCurrent, titleNext]);
+      if (swapTween) {
+        swapTween.kill();
+        swapTween = null;
+      }
+      splitChars(titleCurrent, text);
+      titleNext.innerHTML = '';
+      gsap.set(titleCurrent, { yPercent: -50, y: 0, opacity: 1, filter: 'blur(0px)' });
+      gsap.set(titleNext, { yPercent: -50, y: 0, opacity: 0, filter: 'blur(0px)' });
+      const chars = titleCurrent.querySelectorAll('.char');
+      gsap.set(chars, { y: 0, opacity: 1, filter: 'blur(0px)' });
+    }
+
+    function openMenu() {
+      if (open || busy) return;
+      open = true;
+      trigger.setAttribute('aria-expanded', 'true');
+      measureMenu();
+
+      if (openTween) openTween.kill();
+      openTween = gsap.timeline({
+        defaults: { overwrite: 'auto' },
+      });
+
+      gsap.set(menuWrap, { height: 0, scaleY: 0.92, opacity: 0.65 });
+      openTween
+        .to(menuWrap, {
+          height: menuHeight,
+          scaleY: 1,
+          opacity: 1,
+          duration: 0.52,
+          ease: 'back.out(1.55)',
+        }, 0)
+        .to(chevron, {
+          rotation: 0,
+          duration: 0.42,
+          ease: 'back.out(1.7)',
+        }, 0);
+    }
+
+    function closeMenu() {
+      if (!open) return;
+      open = false;
+      trigger.setAttribute('aria-expanded', 'false');
+
+      if (openTween) openTween.kill();
+      openTween = gsap.timeline({
+        defaults: { overwrite: 'auto' },
+      });
+
+      openTween
+        .to(menuWrap, {
+          height: 0,
+          scaleY: 0.94,
+          opacity: 0.4,
+          duration: 0.38,
+          ease: 'back.in(1.2)',
+        }, 0)
+        .to(chevron, {
+          rotation: 180,
+          duration: 0.36,
+          ease: 'back.inOut(1.4)',
+        }, 0);
+    }
+
+    function swapTitle(nextText) {
+      const outChars = splitChars(titleCurrent, selected);
+      const inChars = splitChars(titleNext, nextText);
+
+      gsap.set(titleCurrent, { yPercent: -50, y: 0, opacity: 1, filter: 'blur(0px)' });
+      gsap.set(titleNext, { yPercent: -50, y: 0, opacity: 1, filter: 'blur(0px)' });
+      gsap.set(outChars, { y: 0, opacity: 1, filter: 'blur(0px)' });
+      gsap.set(inChars, { y: -28, opacity: 0, filter: 'blur(10px)' });
+
+      if (swapTween) swapTween.kill();
+      busy = true;
+
+      swapTween = gsap.timeline({
+        onComplete: () => {
+          selected = nextText;
+          setTitleInstant(selected);
+          renderMenu();
+          busy = false;
+          swapTween = null;
+        },
+      });
+
+      // Outgoing — drop down with blur, small cascade
+      swapTween.to(outChars, {
+        y: 30,
+        opacity: 0,
+        filter: 'blur(10px)',
+        duration: 0.42,
+        stagger: 0.022,
+        ease: 'power2.in',
+      }, 0);
+
+      // Incoming — from above (letter start), cascade in
+      swapTween.to(inChars, {
+        y: 0,
+        opacity: 1,
+        filter: 'blur(0px)',
+        duration: 0.5,
+        stagger: 0.022,
+        ease: 'back.out(1.45)',
+      }, 0.08);
+    }
+
+    function selectMovie(name) {
+      if (busy) return;
+
+      if (name === selected) {
+        closeMenu();
+        return;
+      }
+
+      closeMenu();
+      swapTitle(name);
+    }
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (busy) return;
+      if (open) closeMenu();
+      else openMenu();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!open) return;
+      if (!document.getElementById('stage').contains(e.target)) {
+        closeMenu();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && open) closeMenu();
+    });
+
+    window.addEventListener('resize', () => {
+      if (!open) return;
+      measureMenu();
+      gsap.set(menuWrap, { height: menuHeight, scaleY: 1, opacity: 1 });
+    });
+
+    // Keep wheel / touch scroll inside the menu
+    menuPanel.addEventListener('wheel', (e) => {
+      if (!open) return;
+      e.stopPropagation();
+    }, { passive: true });
+
+    // Boot
+    setTitleInstant(selected);
+    renderMenu();
+    gsap.set(menuWrap, { height: 0, scaleY: 0.92, opacity: 0 });
+    gsap.set(chevron, { rotation: 180 });
+
+    gsap.from('.field', {
+      y: 18,
+      opacity: 0,
+      duration: 0.7,
+      ease: 'back.out(1.4)',
+      delay: 0.05,
+    });
+  </script>
+</body>
+</html>

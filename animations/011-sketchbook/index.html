@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Sketchbook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #E4E4E4;
+      --ink: #111111;
+      --paper: #fafafa;
+      --paper-back: #ebebeb;
+      --cover: #ffffff;
+      --toolbar: rgba(255, 255, 255, 0.94);
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'DM Sans', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      color: var(--ink);
+    }
+
+    .app {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 16px 16px 28px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 14px;
+      background: var(--toolbar);
+      border-radius: 999px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      z-index: 20;
+      max-width: calc(100vw - 24px);
+    }
+
+    .swatches {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .swatches::-webkit-scrollbar { display: none; }
+
+    .swatch {
+      position: relative;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 0;
+      cursor: pointer;
+      flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Selected indicator: dot inside the swatch (no scale — avoids overflow clipping) */
+    .swatch.is-active::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      margin: -4px 0 0 -4px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+      pointer-events: none;
+    }
+
+    .swatch.is-active.is-white::after {
+      background: #111;
+      box-shadow: none;
+    }
+
+    .swatch.is-white {
+      background: #fff !important;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+    }
+
+    .swatches.is-disabled {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .swatch:disabled,
+    .swatches.is-disabled .swatch {
+      cursor: default;
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 22px;
+      background: rgba(0, 0, 0, 0.12);
+      flex-shrink: 0;
+    }
+
+    .btn-clear {
+      appearance: none;
+      border: 0;
+      background: #111;
+      color: #fff;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      padding: 8px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 160ms ease, transform 160ms ease;
+    }
+
+    .btn-clear:hover { background: #2a2a2a; }
+    .btn-clear:active { transform: scale(0.97); }
+    .btn-clear:disabled {
+      opacity: 0.35;
+      cursor: default;
+      transform: none;
+    }
+
+    .stage {
+      --page-w: min(300px, calc((100vw - 48px) / 2));
+      --page-h: calc(var(--page-w) * 1.4);
+      position: relative;
+      width: calc(var(--page-w) * 2);
+      height: var(--page-h);
+      perspective: 1800px;
+      perspective-origin: 50% 45%;
+    }
+
+    .book {
+      position: absolute;
+      inset: 0;
+      transform-style: preserve-3d;
+    }
+
+    .page-stack {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: var(--page-w);
+      height: var(--page-h);
+      transform-style: preserve-3d;
+      transform-origin: left center;
+    }
+
+    .book-base {
+      position: absolute;
+      inset: 0;
+      border-radius: 2px 8px 8px 2px;
+      background:
+        linear-gradient(90deg, #cfcfcf 0 4px, transparent 4px),
+        var(--paper);
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 12px 28px rgba(0, 0, 0, 0.08),
+        0 28px 56px rgba(0, 0, 0, 0.1);
+      transform: translateZ(-2px);
+    }
+
+    /* Soft shadow cast onto the page underneath while flipping */
+    .under-shadow {
+      position: absolute;
+      inset: 0;
+      border-radius: 2px 8px 8px 2px;
+      pointer-events: none;
+      z-index: 40;
+      opacity: 0;
+      background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.22) 0%,
+        rgba(0, 0, 0, 0.1) 28%,
+        rgba(0, 0, 0, 0.03) 55%,
+        transparent 78%
+      );
+      transform: translateZ(1px);
+      transform-origin: left center;
+    }
+
+    .sheet {
+      position: absolute;
+      inset: 0;
+      transform-style: preserve-3d;
+      transform-origin: left center;
+      will-change: transform;
+    }
+
+    .sheet.is-flipping {
+      z-index: 500 !important;
+    }
+
+    /* Keeps the sheet one rigid page hinged at the spine */
+    .sheet-inner {
+      position: absolute;
+      inset: 0;
+      transform-style: preserve-3d;
+      transform-origin: left center;
+    }
+
+    .face {
+      position: absolute;
+      inset: 0;
+      border-radius: 2px 8px 8px 2px;
+      overflow: hidden;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      background: var(--paper);
+    }
+
+    .face.front {
+      box-shadow: inset 10px 0 20px -14px rgba(0, 0, 0, 0.16);
+    }
+
+    .face.back {
+      transform: rotateY(180deg);
+      background: var(--paper-back);
+      border-radius: 8px 2px 2px 8px;
+      box-shadow: inset -10px 0 20px -14px rgba(0, 0, 0, 0.12);
+    }
+
+    .sheet.is-cover .face.front { background: var(--cover); }
+    .sheet.is-cover .face.back { background: #f1f1f1; }
+
+    /* Continuous paper lighting — soft fold shadow */
+    .paper-shade {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 4;
+      mix-blend-mode: multiply;
+      background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.22) 0%,
+        rgba(0, 0, 0, 0.08) 35%,
+        rgba(0, 0, 0, 0.02) 70%,
+        rgba(0, 0, 0, 0) 100%
+      );
+    }
+
+    .paper-shade.back-shade {
+      background: linear-gradient(
+        270deg,
+        rgba(0, 0, 0, 0.18) 0%,
+        rgba(0, 0, 0, 0.07) 35%,
+        rgba(0, 0, 0, 0.02) 70%,
+        rgba(0, 0, 0, 0) 100%
+      );
+    }
+
+    .cover-art {
+      position: absolute;
+      inset: 0;
+      background: #fff;
+    }
+
+    .cover-title {
+      position: absolute;
+      left: 28px;
+      bottom: 32px;
+      margin: 0;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-weight: 600;
+      font-size: clamp(18px, 5.2vw, 24px);
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      color: #111;
+    }
+
+    .page-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    .flip-zone {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 50%;
+      z-index: 6;
+      pointer-events: auto;
+      cursor: grab;
+    }
+
+    .flip-zone:active { cursor: grabbing; }
+
+    .page-num {
+      position: absolute;
+      bottom: 14px;
+      right: 16px;
+      font-size: 11px;
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.28);
+      pointer-events: none;
+      z-index: 3;
+      letter-spacing: 0.04em;
+    }
+
+    .spine-glow {
+      position: absolute;
+      left: calc(50% - 1px);
+      top: 0;
+      bottom: 0;
+      width: 16px;
+      margin-left: -8px;
+      pointer-events: none;
+      z-index: 90;
+      background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.14),
+        rgba(0, 0, 0, 0.04) 55%,
+        transparent
+      );
+      opacity: 0.7;
+    }
+
+    @media (max-width: 420px) {
+      .toolbar { gap: 10px; padding: 8px 10px; }
+      .swatch { width: 24px; height: 24px; }
+      .btn-clear { font-size: 12px; padding: 7px 12px; }
+      .cover-title { left: 20px; bottom: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="toolbar" id="toolbar" role="toolbar" aria-label="Drawing tools">
+      <div class="swatches" id="swatches" role="radiogroup" aria-label="Colors"></div>
+      <div class="toolbar-divider" aria-hidden="true"></div>
+      <button type="button" class="btn-clear" id="btnClear" disabled>Clear page</button>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="book" id="book">
+        <div class="page-stack" id="pageStack">
+          <div class="book-base" aria-hidden="true"></div>
+          <div class="under-shadow" id="underShadow" aria-hidden="true"></div>
+        </div>
+        <div class="spine-glow" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script>
+    (() => {
+      const PAGE_COUNT = 10;
+      const COLORS = [
+        '#111111',
+        '#1e4fd6',
+        '#e03131',
+        '#f08c00',
+        '#2f9e44',
+        '#9c36b5',
+        '#0c8599',
+        '#e64980',
+        '#868e96',
+        '#ffffff',
+      ];
+
+      const pageStack = document.getElementById('pageStack');
+      const underShadow = document.getElementById('underShadow');
+      const swatchesEl = document.getElementById('swatches');
+      const btnClear = document.getElementById('btnClear');
+
+      let currentIndex = 0;
+      let selectedColor = COLORS[0];
+      let isAnimating = false;
+      let isDrawing = false;
+      let isTurning = false;
+
+      const sheets = [];
+
+      /**
+       * Page turn hinged at the spine (left edge).
+       * progress 0 = resting on the right, 1 = fully turned to the left.
+       */
+      function applyFlip(sheet, progress) {
+        const p = gsap.utils.clamp(0, 1, progress);
+        const mid = Math.sin(p * Math.PI);
+        const angle = -180 * p;
+
+        gsap.set(sheet.el, {
+          rotateY: angle,
+          rotateX: 0,
+          z: mid * 36,
+          transformOrigin: 'left center',
+          force3D: true,
+        });
+
+        gsap.set(sheet.inner, {
+          rotateY: 0,
+          transformOrigin: 'left center',
+          force3D: true,
+        });
+
+        const shadeOpacity = mid * 0.9;
+        gsap.set(sheet.frontShade, { opacity: shadeOpacity });
+        gsap.set(sheet.backShade, { opacity: shadeOpacity * 0.8 });
+
+        const spineDark = 0.08 + mid * 0.18;
+        const midDark = mid * 0.07;
+        sheet.frontShade.style.background = `
+          linear-gradient(
+            90deg,
+            rgba(0,0,0,${spineDark}) 0%,
+            rgba(0,0,0,${midDark}) 42%,
+            rgba(0,0,0,${mid * 0.02}) 78%,
+            rgba(0,0,0,0) 100%
+          )`;
+        sheet.backShade.style.background = `
+          linear-gradient(
+            270deg,
+            rgba(0,0,0,${spineDark * 0.85}) 0%,
+            rgba(0,0,0,${midDark * 0.9}) 42%,
+            rgba(0,0,0,${mid * 0.02}) 78%,
+            rgba(0,0,0,0) 100%
+          )`;
+
+        gsap.set(underShadow, {
+          opacity: mid * 0.65,
+          scaleX: 0.55 + mid * 0.45,
+          transformOrigin: 'left center',
+        });
+      }
+
+      function settleFlip(sheet, progress) {
+        const flipped = progress >= 0.5;
+        gsap.set(sheet.el, {
+          rotateY: flipped ? -180 : 0,
+          rotateX: 0,
+          z: 0,
+          transformOrigin: 'left center',
+        });
+        gsap.set(sheet.inner, { rotateY: 0 });
+        gsap.set(sheet.frontShade, { opacity: 0 });
+        gsap.set(sheet.backShade, { opacity: 0 });
+        gsap.set(underShadow, { opacity: 0, scaleX: 1 });
+      }
+
+      function resizeCanvas(sheet) {
+        if (!sheet.canvas || !sheet.ctx) return;
+        const rect = sheet.canvas.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.max(1, Math.round(rect.width * dpr));
+        const h = Math.max(1, Math.round(rect.height * dpr));
+        if (sheet.canvas.width === w && sheet.canvas.height === h) return;
+
+        const prev = document.createElement('canvas');
+        prev.width = sheet.canvas.width;
+        prev.height = sheet.canvas.height;
+        const pctx = prev.getContext('2d');
+        if (sheet.canvas.width && sheet.canvas.height) {
+          pctx.drawImage(sheet.canvas, 0, 0);
+        }
+
+        sheet.canvas.width = w;
+        sheet.canvas.height = h;
+        sheet.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        sheet.ctx.lineCap = 'round';
+        sheet.ctx.lineJoin = 'round';
+
+        if (prev.width && prev.height) {
+          sheet.ctx.save();
+          sheet.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          sheet.ctx.drawImage(prev, 0, 0, w, h);
+          sheet.ctx.restore();
+          sheet.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          sheet.ctx.lineCap = 'round';
+          sheet.ctx.lineJoin = 'round';
+        }
+      }
+
+      function buildCover() {
+        const art = document.createElement('div');
+        art.className = 'cover-art';
+        const title = document.createElement('h1');
+        title.className = 'cover-title';
+        title.textContent = 'The Sketch Book';
+        art.appendChild(title);
+        return art;
+      }
+
+      function buildSheets() {
+        for (let i = 0; i <= PAGE_COUNT; i++) {
+          const el = document.createElement('div');
+          el.className = 'sheet' + (i === 0 ? ' is-cover' : '');
+          el.dataset.index = String(i);
+
+          const inner = document.createElement('div');
+          inner.className = 'sheet-inner';
+
+          const front = document.createElement('div');
+          front.className = 'face front';
+
+          const back = document.createElement('div');
+          back.className = 'face back';
+
+          const frontShade = document.createElement('div');
+          frontShade.className = 'paper-shade';
+          const backShade = document.createElement('div');
+          backShade.className = 'paper-shade back-shade';
+
+          let canvas = null;
+          let ctx = null;
+
+          if (i === 0) {
+            front.appendChild(buildCover());
+          } else {
+            canvas = document.createElement('canvas');
+            canvas.className = 'page-canvas';
+            canvas.setAttribute('aria-label', `Sketch page ${i}`);
+            front.appendChild(canvas);
+            ctx = canvas.getContext('2d');
+
+            const num = document.createElement('div');
+            num.className = 'page-num';
+            num.textContent = String(i).padStart(2, '0');
+            front.appendChild(num);
+          }
+
+          const forwardZone = document.createElement('div');
+          forwardZone.className = 'flip-zone';
+          forwardZone.dataset.dir = 'forward';
+          forwardZone.setAttribute('aria-label', 'Flip page forward');
+
+          const backZone = document.createElement('div');
+          backZone.className = 'flip-zone';
+          backZone.dataset.dir = 'back';
+          backZone.setAttribute('aria-label', 'Flip page back');
+
+          front.appendChild(frontShade);
+          front.appendChild(forwardZone);
+          back.appendChild(backShade);
+          back.appendChild(backZone);
+
+          inner.appendChild(front);
+          inner.appendChild(back);
+          el.appendChild(inner);
+          pageStack.appendChild(el);
+
+          const sheet = {
+            el, inner, canvas, ctx, front, back, index: i,
+            frontShade, backShade,
+          };
+          sheets.push(sheet);
+
+          if (canvas) bindDrawing(sheet);
+          bindTurnHotspot(forwardZone, sheet, 'forward');
+          bindTurnHotspot(backZone, sheet, 'back');
+        }
+
+        updateStack();
+        requestAnimationFrame(() => sheets.forEach(resizeCanvas));
+      }
+
+      function updateStack() {
+        sheets.forEach((sheet, i) => {
+          const flipped = i < currentIndex;
+          const isTop = i === currentIndex;
+          const isLeftTop = i === currentIndex - 1;
+
+          sheet.el.style.pointerEvents = (isTop || isLeftTop) ? 'auto' : 'none';
+          sheet.el.style.zIndex = String(flipped ? i : (100 - i));
+
+          if (!sheet.el.classList.contains('is-flipping')) {
+            settleFlip(sheet, flipped ? 1 : 0);
+            gsap.set(sheet.el, {
+              z: flipped ? i * 0.35 : (PAGE_COUNT - i) * 0.35,
+            });
+          }
+
+          const canForward = isTop && currentIndex < sheets.length - 1;
+          const canBackFromLeft = isLeftTop && currentIndex > 0;
+
+          const forwardZone = sheet.front.querySelector('.flip-zone');
+          const backZone = sheet.back.querySelector('.flip-zone');
+          if (forwardZone) forwardZone.style.display = canForward ? 'block' : 'none';
+          if (backZone) backZone.style.display = canBackFromLeft ? 'block' : 'none';
+
+          if (sheet.canvas) {
+            sheet.canvas.style.pointerEvents = isTop ? 'auto' : 'none';
+          }
+        });
+
+        btnClear.disabled = currentIndex < 1;
+        const bookOpen = currentIndex >= 1;
+        swatchesEl.classList.toggle('is-disabled', !bookOpen);
+        swatchesEl.setAttribute('aria-disabled', bookOpen ? 'false' : 'true');
+        swatchesEl.querySelectorAll('.swatch').forEach((btn) => {
+          btn.disabled = !bookOpen;
+        });
+      }
+
+      function animateFlip(sheet, from, to, onDone) {
+        const distance = Math.abs(to - from);
+        const state = { p: from };
+        gsap.killTweensOf(state);
+        gsap.to(state, {
+          p: to,
+          duration: gsap.utils.clamp(0.4, 0.9, 0.38 + distance * 0.6),
+          ease: 'power3.out',
+          onUpdate: () => applyFlip(sheet, state.p),
+          onComplete: onDone,
+        });
+      }
+
+      function bindDrawing(sheet) {
+        let drawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        const pos = (e) => {
+          const rect = sheet.canvas.getBoundingClientRect();
+          return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        };
+
+        const start = (e) => {
+          if (isAnimating || isTurning || sheet.index !== currentIndex) return;
+          if (e.target.closest && e.target.closest('.flip-zone')) return;
+          e.preventDefault();
+          resizeCanvas(sheet);
+          drawing = true;
+          isDrawing = true;
+          sheet.canvas.setPointerCapture?.(e.pointerId);
+          const p = pos(e);
+          lastX = p.x;
+          lastY = p.y;
+          sheet.ctx.strokeStyle = selectedColor;
+          sheet.ctx.lineWidth = selectedColor === '#ffffff' ? 14 : 2.6;
+          sheet.ctx.beginPath();
+          sheet.ctx.moveTo(lastX, lastY);
+          sheet.ctx.lineTo(lastX + 0.01, lastY + 0.01);
+          sheet.ctx.stroke();
+        };
+
+        const move = (e) => {
+          if (!drawing) return;
+          e.preventDefault();
+          const p = pos(e);
+          sheet.ctx.strokeStyle = selectedColor;
+          sheet.ctx.lineWidth = selectedColor === '#ffffff' ? 14 : 2.6;
+          sheet.ctx.beginPath();
+          sheet.ctx.moveTo(lastX, lastY);
+          sheet.ctx.lineTo(p.x, p.y);
+          sheet.ctx.stroke();
+          lastX = p.x;
+          lastY = p.y;
+        };
+
+        const end = (e) => {
+          if (!drawing) return;
+          drawing = false;
+          isDrawing = false;
+          try { sheet.canvas.releasePointerCapture?.(e.pointerId); } catch (_) { /* noop */ }
+        };
+
+        sheet.canvas.addEventListener('pointerdown', start);
+        sheet.canvas.addEventListener('pointermove', move);
+        sheet.canvas.addEventListener('pointerup', end);
+        sheet.canvas.addEventListener('pointercancel', end);
+      }
+
+      function bindTurnHotspot(hot, sheet, mode) {
+        hot.addEventListener('pointerdown', (e) => {
+          if (isAnimating || isDrawing || isTurning) return;
+
+          let flipping = null;
+          if (mode === 'forward') {
+            if (sheet.index !== currentIndex || currentIndex >= sheets.length - 1) return;
+            flipping = sheets[currentIndex];
+          } else {
+            if (currentIndex <= 0) return;
+            const leftIndex = currentIndex - 1;
+            if (sheet.index !== leftIndex && sheet.index !== currentIndex) return;
+            flipping = sheets[leftIndex];
+          }
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          const startX = e.clientX;
+          const pageW = pageStack.getBoundingClientRect().width;
+
+          isTurning = true;
+          flipping.el.classList.add('is-flipping');
+          flipping.el.style.pointerEvents = 'auto';
+          hot.setPointerCapture?.(e.pointerId);
+
+          let progress = mode === 'forward' ? 0 : 1;
+          applyFlip(flipping, progress);
+
+          const onMove = (ev) => {
+            const dx = ev.clientX - startX;
+            if (mode === 'forward') {
+              progress = gsap.utils.clamp(0, 1, -dx / (pageW * 0.9));
+            } else {
+              progress = gsap.utils.clamp(0, 1, 1 - dx / (pageW * 0.9));
+            }
+            applyFlip(flipping, progress);
+          };
+
+          const onUp = () => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            window.removeEventListener('pointercancel', onUp);
+
+            const complete = mode === 'forward' ? progress >= 0.5 : progress <= 0.5;
+            const target = mode === 'forward'
+              ? (complete ? 1 : 0)
+              : (complete ? 0 : 1);
+
+            isAnimating = true;
+            animateFlip(flipping, progress, target, () => {
+              settleFlip(flipping, target);
+              flipping.el.classList.remove('is-flipping');
+              if (complete) currentIndex += mode === 'forward' ? 1 : -1;
+              isAnimating = false;
+              isTurning = false;
+              updateStack();
+            });
+          };
+
+          window.addEventListener('pointermove', onMove);
+          window.addEventListener('pointerup', onUp);
+          window.addEventListener('pointercancel', onUp);
+        });
+      }
+
+      function buildSwatches() {
+        COLORS.forEach((color, i) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'swatch' + (color === '#ffffff' ? ' is-white' : '');
+          btn.style.background = color;
+          btn.setAttribute('role', 'radio');
+          btn.setAttribute('aria-label', `Color ${color}`);
+          btn.setAttribute('aria-checked', i === 0 ? 'true' : 'false');
+          if (i === 0) btn.classList.add('is-active');
+
+          btn.addEventListener('click', () => {
+            if (btn.disabled) return;
+            selectedColor = color;
+            swatchesEl.querySelectorAll('.swatch').forEach((el) => {
+              el.classList.remove('is-active');
+              el.setAttribute('aria-checked', 'false');
+            });
+            btn.classList.add('is-active');
+            btn.setAttribute('aria-checked', 'true');
+          });
+
+          swatchesEl.appendChild(btn);
+        });
+      }
+
+      btnClear.addEventListener('click', () => {
+        const sheet = sheets[currentIndex];
+        if (!sheet?.ctx || !sheet.canvas) return;
+        sheet.ctx.save();
+        sheet.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        sheet.ctx.clearRect(0, 0, sheet.canvas.width, sheet.canvas.height);
+        sheet.ctx.restore();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        sheet.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        sheet.ctx.lineCap = 'round';
+        sheet.ctx.lineJoin = 'round';
+      });
+
+      pageStack.addEventListener('dblclick', () => {
+        if (isAnimating || isTurning || currentIndex !== 0) return;
+        isAnimating = true;
+        const cover = sheets[0];
+        cover.el.classList.add('is-flipping');
+        animateFlip(cover, 0, 1, () => {
+          settleFlip(cover, 1);
+          cover.el.classList.remove('is-flipping');
+          currentIndex = 1;
+          isAnimating = false;
+          updateStack();
+        });
+      });
+
+      window.addEventListener('resize', () => sheets.forEach(resizeCanvas));
+
+      buildSwatches();
+      buildSheets();
+    })();
+  </script>
+</body>
+</html>

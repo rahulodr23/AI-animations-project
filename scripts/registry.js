@@ -83,4 +83,20 @@ export const animations = [
     tags: ['gallery', 'folder', 'pinch', 'drag', 'photos', 'glassmorphism'],
     folder: '/animations/010-gallery-folder',
   },
+  {
+    id: '011-sketchbook',
+    name: 'Sketchbook',
+    description: 'Open a geometric sketchbook, drag page corners to turn, pick a color, and draw freehand — clear any page when you want a fresh sheet.',
+    type: 'gsap',
+    tags: ['book', 'draw', 'drag', 'pages', 'sketch', 'color', 'interactive'],
+    folder: '/animations/011-sketchbook',
+  },
+  {
+    id: '012-movie-dropdown',
+    name: 'Movie Dropdown',
+    description: 'Chamfered movie picker — open with a bounce, then swap titles letter-by-letter with a cascading blur when you pick a new film.',
+    type: 'gsap',
+    tags: ['dropdown', 'text', 'blur', 'cascade', 'bounce', 'micro-interaction'],
+    folder: '/animations/012-movie-dropdown',
+  },
 ];

@@ -1,0 +1,8 @@
+{
+  "id": "012-movie-dropdown",
+  "name": "Movie Dropdown",
+  "description": "Chamfered movie picker — open with a bounce, then swap titles letter-by-letter with a cascading blur when you pick a new film.",
+  "type": "gsap",
+  "tags": ["dropdown", "text", "blur", "cascade", "bounce", "micro-interaction"],
+  "created": "2026-08-09"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "011-sketchbook",
+  "name": "Sketchbook",
+  "description": "Open a geometric sketchbook, drag page corners to turn, pick a color, and draw freehand — clear any page when you want a fresh sheet.",
+  "type": "gsap",
+  "tags": ["book", "draw", "drag", "pages", "sketch", "color", "interactive"],
+  "created": "2026-08-08"
+}

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fluid Battery</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #050505;
+      --liquid: #e53935;
+      --liquid-bright: #ff7043;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    .stage {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .widget {
+      position: relative;
+      width: min(340px, 86vw);
+      aspect-ratio: 1;
+      border-radius: 36px;
+      background: linear-gradient(180deg, #1a1a1a 0%, #101010 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 24px 48px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+      padding: 0 28px;
+      overflow: hidden;
+    }
+
+    .battery {
+      position: relative;
+      z-index: 1;
+      width: 60%; /* 40% narrower than full card width */
+      align-self: center;
+    }
+
+    .battery__row {
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+
+    .tube {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      height: 56px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #2c2c2c 0%, #1f1f1f 45%, #262626 100%);
+      box-shadow:
+        inset 0 2px 6px rgba(0, 0, 0, 0.55),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+        0 0 0 1px rgba(255, 255, 255, 0.04);
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    /* Positive terminal nub — classic battery icon tip */
+    .battery__tip {
+      width: 10px;
+      height: 22px;
+      margin-left: 4px;
+      border-radius: 0 5px 5px 0;
+      background: linear-gradient(180deg, #3a3a3a 0%, #252525 50%, #303030 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.05);
+      flex-shrink: 0;
+    }
+
+    .tube__svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    .tube__shine {
+      position: absolute;
+      left: 6%;
+      right: 6%;
+      top: 7%;
+      height: 38%;
+      border-radius: 10px;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0.06) 55%,
+        transparent 100%
+      );
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .tube__rim {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      pointer-events: none;
+      z-index: 3;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="widget" id="widget">
+      <div class="battery">
+        <div class="battery__row">
+          <div class="tube" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Battery charge" id="tube">
+            <svg class="tube__svg" viewBox="0 0 284 56" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="liquidGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop id="gradTop" offset="0%" stop-color="#ff7043" />
+                  <stop id="gradMid" offset="45%" stop-color="#e53935" />
+                  <stop id="gradBot" offset="100%" stop-color="#b71c1c" />
+                </linearGradient>
+                <filter id="liquidGlow" x="-20%" y="-40%" width="140%" height="180%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="2.2" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <clipPath id="tubeClip">
+                  <rect x="0" y="0" width="284" height="56" rx="14" ry="14" />
+                </clipPath>
+              </defs>
+              <g clip-path="url(#tubeClip)">
+                <path id="liquid" fill="url(#liquidGrad)" filter="url(#liquidGlow)" d="" />
+                <path id="meniscus" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.2" stroke-linecap="round" opacity="0.7" d="" />
+              </g>
+            </svg>
+            <div class="tube__shine"></div>
+            <div class="tube__rim"></div>
+          </div>
+          <div class="battery__tip" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const CHARGE_MS = 30_000;
+      const HOLD_FULL_MS = 3000;
+      const W = 284;
+      const H = 56;
+      const R = 14; // matches battery body corner radius
+      const WAVE_AMP = 3.2;
+      const WAVE_FREQ = 1.05;
+
+      const widget = document.getElementById('widget');
+      const tube = document.getElementById('tube');
+      const liquid = document.getElementById('liquid');
+      const meniscus = document.getElementById('meniscus');
+      const gradTop = document.getElementById('gradTop');
+      const gradMid = document.getElementById('gradMid');
+      const gradBot = document.getElementById('gradBot');
+
+      const RED = { bright: '#ff6b5a', mid: '#e53935', deep: '#8e1b1b' };
+      const BLUE = { bright: '#5ab0ff', mid: '#1e88e5', deep: '#0d47a1' };
+      const GREEN = { bright: '#69f0ae', mid: '#43a047', deep: '#1b5e20' };
+
+      function hexToRgb(hex) {
+        const n = hex.replace('#', '');
+        const v = parseInt(n, 16);
+        return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
+      }
+
+      function rgbToHex({ r, g, b }) {
+        const h = (n) => n.toString(16).padStart(2, '0');
+        return `#${h(Math.round(r))}${h(Math.round(g))}${h(Math.round(b))}`;
+      }
+
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      function lerpColor(a, b, t) {
+        const A = hexToRgb(a);
+        const B = hexToRgb(b);
+        return rgbToHex({
+          r: lerp(A.r, B.r, t),
+          g: lerp(A.g, B.g, t),
+          b: lerp(A.b, B.b, t),
+        });
+      }
+
+      function mixPalette(a, b, t) {
+        return {
+          bright: lerpColor(a.bright, b.bright, t),
+          mid: lerpColor(a.mid, b.mid, t),
+          deep: lerpColor(a.deep, b.deep, t),
+        };
+      }
+
+      /** Color bands: 0–30 red, 30–90 blue, 90–100 green (soft blend at edges). */
+      function paletteFor(pct) {
+        if (pct < 28) return RED;
+        if (pct < 32) return mixPalette(RED, BLUE, (pct - 28) / 4);
+        if (pct < 88) return BLUE;
+        if (pct < 92) return mixPalette(BLUE, GREEN, (pct - 88) / 4);
+        return GREEN;
+      }
+
+      function applyPalette(p) {
+        gradTop.setAttribute('stop-color', p.bright);
+        gradMid.setAttribute('stop-color', p.mid);
+        gradBot.setAttribute('stop-color', p.deep);
+        widget.style.setProperty('--liquid', p.mid);
+        widget.style.setProperty('--liquid-bright', p.bright);
+        meniscus.setAttribute('stroke', p.bright);
+      }
+
+      function waveX(y, levelX, phase, amp) {
+        const t = y / H;
+        return (
+          levelX +
+          Math.sin(t * Math.PI * WAVE_FREQ * 2 + phase) * amp +
+          Math.sin(t * Math.PI * 3.2 - phase * 1.4) * (amp * 0.35)
+        );
+      }
+
+      function buildLiquidPath(pct, phase) {
+        const level = Math.max(0, Math.min(100, pct));
+        if (level <= 0.05) {
+          return { body: '', edge: '' };
+        }
+
+        const fillW = (level / 100) * W;
+        // Ease amplitude down near empty / full so waves stay inside the body
+        const edgeFade = Math.min(1, level / 8, (100 - level) / 8);
+        const amp = WAVE_AMP * edgeFade;
+        const samples = 16;
+        const points = [];
+
+        for (let i = 0; i <= samples; i++) {
+          const y = (i / samples) * H;
+          const x = Math.max(2, Math.min(W - 2, waveX(y, fillW, phase, amp)));
+          points.push([x, y]);
+        }
+
+        // Rounded-rect body fill with wavy leading edge
+        let d = `M ${R} 0`;
+        d += ` L ${points[0][0]} 0`;
+        for (let i = 1; i < points.length; i++) {
+          d += ` L ${points[i][0]} ${points[i][1]}`;
+        }
+        d += ` L ${R} ${H}`;
+        d += ` A ${R} ${R} 0 0 1 0 ${H - R}`;
+        d += ` L 0 ${R}`;
+        d += ` A ${R} ${R} 0 0 1 ${R} 0`;
+        d += ' Z';
+
+        let edge = `M ${points[0][0]} ${points[0][1]}`;
+        for (let i = 1; i < points.length; i++) {
+          edge += ` L ${points[i][0]} ${points[i][1]}`;
+        }
+
+        return { body: d, edge };
+      }
+
+      function render(pct, phase) {
+        const { body, edge } = buildLiquidPath(pct, phase);
+        liquid.setAttribute('d', body);
+        meniscus.setAttribute('d', edge);
+        meniscus.style.opacity = pct < 0.5 ? '0' : '0.75';
+        applyPalette(paletteFor(pct));
+        tube.setAttribute('aria-valuenow', String(Math.round(pct)));
+      }
+
+      let start = performance.now();
+      let phase = 0;
+      let last = start;
+      let mode = 'charging'; // charging | hold
+      let modeStart = start;
+
+      function easeInOut(t) {
+        return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      }
+
+      function tick(now) {
+        const dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        phase += dt * 1.6;
+
+        let pct = 0;
+
+        if (mode === 'charging') {
+          const t = Math.min(1, (now - modeStart) / CHARGE_MS);
+          pct = easeInOut(t) * 100;
+          if (t >= 1) {
+            mode = 'hold';
+            modeStart = now;
+            pct = 100;
+          }
+        } else {
+          pct = 100;
+          // Hold full, then snap instantly back to empty and restart
+          if (now - modeStart >= HOLD_FULL_MS) {
+            mode = 'charging';
+            modeStart = now;
+            pct = 0;
+          }
+        }
+
+        render(pct, phase);
+        requestAnimationFrame(tick);
+      }
+
+      render(0, 0);
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>

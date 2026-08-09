@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glowing Badges</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #000000;
+      --badge: 168px;
+      --gap: 56px;
+      --icon: 52%;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .stage {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, var(--badge));
+      grid-template-rows: repeat(2, var(--badge));
+      gap: var(--gap);
+    }
+
+    /* ── Badge shell ─────────────────────────── */
+    .badge {
+      position: relative;
+      width: var(--badge);
+      height: var(--badge);
+      display: grid;
+      place-items: center;
+      animation: float 3.6s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    .badge:nth-child(1) { animation-delay: 0s; }
+    .badge:nth-child(2) { animation-delay: -0.9s; }
+    .badge:nth-child(3) { animation-delay: -1.8s; }
+    .badge:nth-child(4) { animation-delay: -2.7s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .badge__glow {
+      position: absolute;
+      inset: -18%;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle,
+        color-mix(in srgb, var(--glow) 55%, transparent) 0%,
+        color-mix(in srgb, var(--glow) 22%, transparent) 42%,
+        transparent 70%
+      );
+      filter: blur(6px);
+      animation: glow-breathe 2.8s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .badge:nth-child(1) .badge__glow { animation-delay: 0s; }
+    .badge:nth-child(2) .badge__glow { animation-delay: -0.7s; }
+    .badge:nth-child(3) .badge__glow { animation-delay: -1.4s; }
+    .badge:nth-child(4) .badge__glow { animation-delay: -2.1s; }
+
+    @keyframes glow-breathe {
+      0%, 100% { opacity: 0.72; transform: scale(0.96); }
+      50% { opacity: 1; transform: scale(1.06); }
+    }
+
+    .badge__art {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      overflow: visible;
+      filter: drop-shadow(0 0 14px color-mix(in srgb, var(--glow) 55%, transparent));
+    }
+
+    /* Figma icon shapes — masked so we can tint them */
+    .badge__icon {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: var(--icon);
+      height: var(--icon);
+      transform: translate(-50%, -50%);
+      z-index: 2;
+      background: var(--icon-color);
+      -webkit-mask: var(--icon-url) center / contain no-repeat;
+      mask: var(--icon-url) center / contain no-repeat;
+      pointer-events: none;
+    }
+
+    .sparkle {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: sparkle 1.8s ease-in-out infinite;
+    }
+
+    .sparkle--a { animation-delay: 0s; }
+    .sparkle--b { animation-delay: -0.6s; }
+    .sparkle--c { animation-delay: -1.2s; }
+
+    @keyframes sparkle {
+      0%, 100% {
+        opacity: 0.35;
+        transform: scale(0.55) rotate(0deg);
+      }
+      40% {
+        opacity: 1;
+        transform: scale(1.15) rotate(18deg);
+      }
+      70% {
+        opacity: 0.7;
+        transform: scale(0.85) rotate(-8deg);
+      }
+    }
+
+    /* Theme tokens */
+    .badge--star {
+      --glow: #ff9a1f;
+      --icon-color: #ffe566;
+      --icon-url: url('./assets/star.svg');
+    }
+    .badge--heart {
+      --glow: #ff4d9a;
+      --icon-color: #ff5eac;
+      --icon-url: url('./assets/heart.svg');
+    }
+    .badge--crown {
+      --glow: #a855f7;
+      --icon-color: #c084fc;
+      --icon-url: url('./assets/crown.svg');
+    }
+    .badge--cup {
+      --glow: #39d353;
+      --icon-color: #39d353;
+      --icon-url: url('./assets/cup.svg');
+    }
+
+    @media (max-width: 480px) {
+      :root {
+        --badge: 120px;
+        --gap: 36px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="grid" aria-label="Glowing achievement badges">
+
+      <!-- Star (gold) -->
+      <div class="badge badge--star" aria-label="Star badge">
+        <div class="badge__glow"></div>
+        <svg class="badge__art" viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="ring-star" x1="20" y1="10" x2="100" y2="110" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#ffe08a" />
+              <stop offset="35%" stop-color="#ffb020" />
+              <stop offset="70%" stop-color="#ff7a00" />
+              <stop offset="100%" stop-color="#e85d00" />
+            </linearGradient>
+            <linearGradient id="sheen-star" x1="30" y1="8" x2="90" y2="112" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+              <stop offset="28%" stop-color="#ffffff" stop-opacity="0.25" />
+              <stop offset="55%" stop-color="#ffffff" stop-opacity="0" />
+              <stop offset="78%" stop-color="#ffffff" stop-opacity="0.35" />
+              <stop offset="100%" stop-color="#ffffff" stop-opacity="0.1" />
+            </linearGradient>
+            <radialGradient id="face-star" cx="50%" cy="38%" r="62%">
+              <stop offset="0%" stop-color="#2a1600" />
+              <stop offset="100%" stop-color="#120800" />
+            </radialGradient>
+          </defs>
+          <circle cx="60" cy="60" r="40" fill="url(#face-star)" />
+          <circle cx="60" cy="60" r="48" fill="none" stroke="url(#ring-star)" stroke-width="16" />
+          <circle cx="60" cy="60" r="48" fill="none" stroke="url(#sheen-star)" stroke-width="16" stroke-linecap="round"
+            stroke-dasharray="42 260" transform="rotate(-35 60 60)" opacity="0.95" />
+          <circle cx="60" cy="60" r="48" fill="none" stroke="url(#sheen-star)" stroke-width="16" stroke-linecap="round"
+            stroke-dasharray="28 274" transform="rotate(145 60 60)" opacity="0.55" />
+          <circle cx="60" cy="60" r="39.5" fill="none" stroke="#3a2200" stroke-width="1.5" opacity="0.55" />
+          <g class="sparkle sparkle--a">
+            <path fill="#fff" d="M22 38l2.2 5.4 5.4 2.2-5.4 2.2L22 53.2l-2.2-5.4-5.4-2.2 5.4-2.2z" />
+          </g>
+          <g class="sparkle sparkle--b">
+            <path fill="#fff" d="M94 78l1.6 3.8 3.8 1.6-3.8 1.6L94 89l-1.6-3.8-3.8-1.6 3.8-1.6z" />
+          </g>
+          <g class="sparkle sparkle--c">
+            <path fill="#fff" d="M78 28l1.2 2.8 2.8 1.2-2.8 1.2L78 36l-1.2-2.8-2.8-1.2 2.8-1.2z" />
+          </g>
+        </svg>
+        <div class="badge__icon"></div>
+      </div>
+
+      <!-- Heart (pink) -->
+      <div class="badge badge--heart" aria-label="Heart badge">
+        <div class="badge__glow"></div>
+        <svg class="badge__art" viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="ring-heart" x1="18" y1="8" x2="102" y2="112" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#ffc0e0" />
+              <stop offset="30%" stop-color="#ff6bb5" />
+              <stop offset="65%" stop-color="#ff2d8a" />
+              <stop offset="100%" stop-color="#d4146a" />
+            </linearGradient>
+            <linearGradient id="sheen-heart" x1="30" y1="8" x2="90" y2="112" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+              <stop offset="28%" stop-color="#ffffff" stop-opacity="0.25" />
+              <stop offset="55%" stop-color="#ffffff" stop-opacity="0" />
+              <stop offset="78%" stop-color="#ffffff" stop-opacity="0.35" />
+              <stop offset="100%" stop-color="#ffffff" stop-opacity="0.1" />
+            </linearGradient>
+            <radialGradient id="face-heart" cx="50%" cy="38%" r="62%">
+              <stop offset="0%" stop-color="#2a0416" />
+              <stop offset="100%" stop-color="#14020b" />
+            </radialGradient>
+          </defs>
+          <circle cx="60" cy="60" r="40" fill="url(#face-heart)" />
+          <circle cx="60" cy="60" r="48" fill="none" stroke="url(#ring-heart)" stroke-width="16" />
+          <circle cx="60" cy="60" r="48" fill="none" stroke="url(#sheen-heart)" stroke-width="16" stroke-linecap="round"
+            stroke-dasharray="42 260" transform="rotate(-35 60 60)" opacity="0.95" />
+          <circle cx="60" cy="60" r="48" fill="none" stroke="url(#sheen-heart)" stroke-width="16" stroke-linecap="round"
+            stroke-dasharray="28 274" transform="rotate(145 60 60)" opacity="0.55" />
+          <circle cx="60" cy="60" r="39.5" fill="none" stroke="#3a0a22" stroke-width="1.5" opacity="0.55" />
+          <g class="sparkle sparkle--a">
+            <path fill="#fff" d="M24 40l2.2 5.4 5.4 2.2-5.4 2.2L24 55.2l-2.2-5.4-5.4-2.2 5.4-2.2z" />
+          </g>
+          <g class="sparkle sparkle--b">
+            <path fill="#fff" d="M92 84l1.6 3.8 3.8 1.6-3.8 1.6L92 95l-1.6-3.8-3.8-1.6 3.8-1.6z" />
+          </g>
+          <g class="sparkle sparkle--c">
+            <path fill="#fff" d="M86 34l1.2 2.8 2.8 1.2-2.8 1.2L86 42l-1.2-2.8-2.8-1.2 2.8-1.2z" />
+          </g>
+        </svg>
+        <div class="badge__icon"></div>
+      </div>
+
+      <!-- Crown (purple) -->
+      <div class="badge badge--crown" aria-label="Crown badge">
+        <div class="badge__glow"></div>
+        <svg class="badge__art" viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="ring-crown" x1="18" y1="8" x2="102" y2="112" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#e9d5ff" />
+              <stop offset="30%" stop-color="#c084fc" />
+              <stop offset="65%" stop-color="#9333ea" />
+              <stop offset="100%" stop-color="#6b21a8" />
+            </linearGradient>
+            <linearGradient id="sheen-crown" x1="30" y1="8" x2="90" y2="112" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+              <stop offset="28%" stop-color="#ffffff" stop-opacity="0.25" />
+              <stop offset="55%" stop-color="#ffffff" stop-opacity="0" />
+              <stop offset="78%" stop-color="#ffffff" stop-opacity="0.35" />
+              <stop offset="100%" stop-color="#ffffff" stop-opacity="0.1" />
+            </linearGradient>
+            <radialGradient id="face-crown" cx="50%" cy="38%" r="62%">
+              <stop offset="0%" stop-color="#1a0828" />
+              <stop offset="100%" stop-color="#0c0414" />
+            </radialGradient>
+          </defs>
+          <circle cx="60" cy="60" r="40" fill="url(#face-crown)" />
+          <circle cx="60" cy="60" r="48" fill="none" stroke="url(#ring-crown)" stroke-width="16" />
+          <circle cx="60" cy="60" r="48" fill="none" stroke="url(#sheen-crown)" stroke-width="16" stroke-linecap="round"
+            stroke-dasharray="42 260" transform="rotate(-35 60 60)" opacity="0.95" />
+          <circle cx="60" cy="60" r="48" fill="none" stroke="url(#sheen-crown)" stroke-width="16" stroke-linecap="round"
+            stroke-dasharray="28 274" transform="rotate(145 60 60)" opacity="0.55" />
+          <circle cx="60" cy="60" r="39.5" fill="none" stroke="#2a1040" stroke-width="1.5" opacity="0.55" />
+          <g class="sparkle sparkle--a">
+            <path fill="#fff" d="M26 36l2.2 5.4 5.4 2.2-5.4 2.2L26 51.2l-2.2-5.4-5.4-2.2 5.4-2.2z" />
+          </g>
+          <g class="sparkle sparkle--b">
+            <path fill="#fff" d="M96 72l1.6 3.8 3.8 1.6-3.8 1.6L96 83l-1.6-3.8-3.8-1.6 3.8-1.6z" />
+          </g>
+          <g class="sparkle sparkle--c">
+            <path fill="#fff" d="M70 90l1.2 2.8 2.8 1.2-2.8 1.2L70 98l-1.2-2.8-2.8-1.2 2.8-1.2z" />
+          </g>
+        </svg>
+        <div class="badge__icon"></div>
+      </div>
+
+      <!-- Cup (green) -->
+      <div class="badge badge--cup" aria-label="Cup badge">
+        <div class="badge__glow"></div>
+        <svg class="badge__art" viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="ring-cup" x1="18" y1="8" x2="102" y2="112" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#b8f5c2" />
+              <stop offset="30%" stop-color="#4ade80" />
+              <stop offset="65%" stop-color="#22c55e" />
+              <stop offset="100%" stop-color="#15803d" />
+            </linearGradient>
+            <linearGradient id="sheen-cup" x1="30" y1="8" x2="90" y2="112" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+              <stop offset="28%" stop-color="#ffffff" stop-opacity="0.25" />
+              <stop offset="55%" stop-color="#ffffff" stop-opacity="0" />
+              <stop offset="78%" stop-color="#ffffff" stop-opacity="0.35" />
+              <stop offset="100%" stop-color="#ffffff" stop-opacity="0.1" />
+            </linearGradient>
+            <radialGradient id="face-cup" cx="50%" cy="38%" r="62%">
+              <stop offset="0%" stop-color="#061a0c" />
+              <stop offset="100%" stop-color="#030d06" />
+            </radialGradient>
+          </defs>
+          <circle cx="60" cy="60" r="40" fill="url(#face-cup)" />
+          <circle cx="60" cy="60" r="48" fill="none" stroke="url(#ring-cup)" stroke-width="16" />
+          <circle cx="60" cy="60" r="48" fill="none" stroke="url(#sheen-cup)" stroke-width="16" stroke-linecap="round"
+            stroke-dasharray="42 260" transform="rotate(-35 60 60)" opacity="0.95" />
+          <circle cx="60" cy="60" r="48" fill="none" stroke="url(#sheen-cup)" stroke-width="16" stroke-linecap="round"
+            stroke-dasharray="28 274" transform="rotate(145 60 60)" opacity="0.55" />
+          <circle cx="60" cy="60" r="39.5" fill="none" stroke="#0a2814" stroke-width="1.5" opacity="0.55" />
+          <g class="sparkle sparkle--a">
+            <path fill="#fff" d="M22 42l2.2 5.4 5.4 2.2-5.4 2.2L22 57.2l-2.2-5.4-5.4-2.2 5.4-2.2z" />
+          </g>
+          <g class="sparkle sparkle--b">
+            <path fill="#fff" d="M95 76l1.6 3.8 3.8 1.6-3.8 1.6L95 87l-1.6-3.8-3.8-1.6 3.8-1.6z" />
+          </g>
+          <g class="sparkle sparkle--c">
+            <path fill="#fff" d="M80 30l1.2 2.8 2.8 1.2-2.8 1.2L80 38l-1.2-2.8-2.8-1.2 2.8-1.2z" />
+          </g>
+        </svg>
+        <div class="badge__icon"></div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

@@ -107,4 +107,20 @@ export const animations = [
     tags: ['wallet', 'cards', 'tap', 'slider', 'stack', 'bounce', 'micro-interaction'],
     folder: '/animations/013-wallet-cards',
   },
+  {
+    id: '014-glowing-badges',
+    name: 'Glowing Badges',
+    description: 'Four glossy achievement badges — star, heart, crown, and cup — with soft colored glow, twinkling sparkles, and a gentle floating hover.',
+    type: 'css-js',
+    tags: ['badges', 'glow', 'sparkle', 'float', 'icons', 'game'],
+    folder: '/animations/014-glowing-badges',
+  },
+  {
+    id: '015-fluid-battery',
+    name: 'Fluid Battery',
+    description: 'A glass battery tube that charges from 0 to 100% in 30 seconds — liquid wave edge, glow, and color shifts red → blue → green.',
+    type: 'css-js',
+    tags: ['battery', 'fluid', 'liquid', 'glow', 'progress', 'charge'],
+    folder: '/animations/015-fluid-battery',
+  },
 ];

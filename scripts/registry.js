@@ -99,4 +99,12 @@ export const animations = [
     tags: ['dropdown', 'text', 'blur', 'cascade', 'bounce', 'micro-interaction'],
     folder: '/animations/012-movie-dropdown',
   },
+  {
+    id: '013-wallet-cards',
+    name: 'Wallet Cards',
+    description: 'Tap the wallet knob to fan credit cards into a stack with a bounce, or tap again to tuck them back inside.',
+    type: 'gsap',
+    tags: ['wallet', 'cards', 'tap', 'slider', 'stack', 'bounce', 'micro-interaction'],
+    folder: '/animations/013-wallet-cards',
+  },
 ];

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Wallet Cards</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;600&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #f2f4f1;
+      --knob: #020b3b;
+      --card-w: 445.711px;
+      --card-h: 278.72px;
+      --card-r: 19.222px;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Figtree', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* 1000×1000 Figma artboard, scaled to fit the viewport */
+    .fit {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 1000px;
+      height: 1000px;
+      margin-left: -500px;
+      margin-top: -500px;
+      transform-origin: center center;
+      will-change: transform;
+    }
+
+    .wallet-back {
+      position: absolute;
+      left: 233.834px;
+      top: 316px;
+      width: 532px;
+      height: 350px;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .wallet-back img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .cards {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .card {
+      position: absolute;
+      left: 277.145px;
+      width: var(--card-w);
+      height: var(--card-h);
+      border-radius: var(--card-r);
+      overflow: hidden;
+      will-change: transform;
+      box-shadow: 0 10px 28px rgba(8, 16, 48, 0.18);
+    }
+
+    .card.teal {
+      background: linear-gradient(180deg, #1c2b2b 0%, #376e6a 100%);
+      z-index: 1;
+    }
+
+    .card.orange {
+      background: linear-gradient(180deg, #ff7a22 0%, #ff8a3e 100%);
+      z-index: 2;
+    }
+
+    .card.purple {
+      background: linear-gradient(180deg, #6b00b7 0%, #ae00ed 100%);
+      z-index: 3;
+    }
+
+    .card-top {
+      position: absolute;
+      left: 29.17px;
+      top: 20.01px;
+      width: 387px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-number {
+      color: #fff;
+      font-weight: 500;
+      font-size: 24.028px;
+      line-height: normal;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+
+    .card-chip {
+      width: 44.526px;
+      height: 30.812px;
+      flex-shrink: 0;
+    }
+
+    .card-chip img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .card-label {
+      position: absolute;
+      color: #fff;
+      font-weight: 600;
+      font-size: 17.002px;
+      line-height: normal;
+      white-space: nowrap;
+    }
+
+    .card-label.name-key { left: 28.83px; top: 201.5px; }
+    .card-label.exp-key { left: 348.19px; top: 201.5px; }
+    .card-label.name-val { left: 28.83px; top: 229.58px; }
+    .card-label.exp-val { left: 348.19px; top: 229.58px; }
+
+    .wallet-front {
+      position: absolute;
+      left: 204px;
+      top: 337.446px;
+      width: 591.669px;
+      height: 371.554px;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .wallet-front > img.shell {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /*
+      Figma Rectangle 5: black plate + dashed stitch at 40% opacity.
+      Screen blend drops the black fill and keeps the light stitch.
+    */
+    .wallet-front .leather {
+      position: absolute;
+      left: 20.834px;
+      top: 20.554px;
+      width: 550px;
+      height: 331px;
+      opacity: 0.55;
+      mix-blend-mode: screen;
+      display: block;
+      pointer-events: none;
+    }
+
+    .slider {
+      position: absolute;
+      left: 471px;
+      top: 558px;
+      width: 59px;
+      height: 120px;
+      border-radius: 1000px;
+      background: rgba(255, 255, 255, 0.1);
+      z-index: 5;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .slider:active .knob {
+      transform: scale(0.96);
+    }
+
+    .knob {
+      position: absolute;
+      left: 4px;
+      top: 65px;
+      width: 51px;
+      height: 51px;
+      border-radius: 1000px;
+      background: var(--knob);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      will-change: transform;
+      box-shadow: 0 6px 16px rgba(2, 11, 59, 0.35);
+    }
+
+    .knob-icon {
+      width: 29px;
+      height: 29px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      will-change: transform;
+    }
+
+    .knob-icon img {
+      width: 29px;
+      height: 29px;
+      display: block;
+    }
+
+    /* Enlarge the grab target without changing visuals */
+    .slider::before {
+      content: '';
+      position: absolute;
+      inset: -16px -20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div class="fit" id="fit">
+      <div class="wallet-back" aria-hidden="true">
+        <img src="./assets/wallet-back.svg" alt="" />
+      </div>
+
+      <div class="cards" id="cards" aria-hidden="true">
+        <div class="card teal" data-card="teal">
+          <div class="card-top">
+            <span class="card-number">5488 XXXX XXXX 4511</span>
+            <div class="card-chip"><img src="./assets/chip-mc.svg" alt="" /></div>
+          </div>
+          <span class="card-label name-key">Name</span>
+          <span class="card-label exp-key">Exp date</span>
+          <span class="card-label name-val">Rahul Odedra</span>
+          <span class="card-label exp-val">05/25</span>
+        </div>
+
+        <div class="card orange" data-card="orange">
+          <div class="card-top">
+            <span class="card-number">6478 XXXX XXXX 3521</span>
+            <div class="card-chip"><img src="./assets/chip-mc.svg" alt="" /></div>
+          </div>
+          <span class="card-label name-key">Name</span>
+          <span class="card-label exp-key">Exp date</span>
+          <span class="card-label name-val">Rahul Odedra</span>
+          <span class="card-label exp-val">05/25</span>
+        </div>
+
+        <div class="card purple" data-card="purple">
+          <div class="card-top">
+            <span class="card-number">1246 XXXX XXXX 6621</span>
+            <div class="card-chip"><img src="./assets/chip-visa.svg" alt="" /></div>
+          </div>
+          <span class="card-label name-key">Name</span>
+          <span class="card-label exp-key">Exp date</span>
+          <span class="card-label name-val">Rahul Odedra</span>
+          <span class="card-label exp-val">05/25</span>
+        </div>
+      </div>
+
+      <div class="wallet-front" aria-hidden="true">
+        <img class="shell" src="./assets/wallet-front.svg" alt="" />
+        <img class="leather" src="./assets/leather.png" alt="" />
+      </div>
+
+      <div
+        class="slider"
+        id="slider"
+        role="button"
+        tabindex="0"
+        aria-label="Toggle wallet cards"
+        aria-pressed="false"
+      >
+        <div class="knob" id="knob">
+          <div class="knob-icon" id="knobIcon">
+            <img src="./assets/chevron.svg" alt="" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script>
+    /*
+      Closed (progress 0) → Open (progress 1)
+      Tap the knob to toggle: cards fan out with an overshoot bounce, tap again to tuck in.
+      Positions match Figma frames 78:38 (closed) and 78:293 (open).
+    */
+    const KNOB_CLOSED = 65;
+    const KNOB_OPEN = 5;
+    const KNOB_RANGE = KNOB_CLOSED - KNOB_OPEN; // 60px
+
+    const CARDS = [
+      { el: document.querySelector('.card.teal'),   closedY: 279, openY: 150 },
+      { el: document.querySelector('.card.orange'), closedY: 299, openY: 210 },
+      { el: document.querySelector('.card.purple'), closedY: 318, openY: 269 },
+    ];
+
+    const fit = document.getElementById('fit');
+    const slider = document.getElementById('slider');
+    const knob = document.getElementById('knob');
+    const knobIcon = document.getElementById('knobIcon');
+
+    const state = { progress: 0, open: false };
+    let snapTween = null;
+
+    function fitStage() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const scale = Math.min(w / 1000, h / 1000);
+      fit.style.transform = `scale(${scale})`;
+    }
+
+    function clamp01(v) {
+      return Math.max(0, Math.min(1, v));
+    }
+
+    function applyProgress(p) {
+      state.progress = p;
+      // Knob stays inside the track; cards may briefly overshoot past open
+      const tUI = clamp01(p);
+
+      gsap.set(knob, { top: KNOB_CLOSED - tUI * KNOB_RANGE });
+      gsap.set(knobIcon, { rotation: 180 * tUI });
+      slider.setAttribute('aria-pressed', state.open ? 'true' : 'false');
+
+      // Soft ease on the way; values > 1 = overshoot above the open stack
+      let rise;
+      if (p <= 1) {
+        const t = Math.max(0, p);
+        rise = 1 - Math.pow(1 - t, 1.35);
+      } else {
+        rise = p;
+      }
+
+      CARDS.forEach((card) => {
+        gsap.set(card.el, {
+          top: card.closedY,
+          y: (card.openY - card.closedY) * rise,
+          force3D: true,
+        });
+      });
+    }
+
+    function snapTo(target) {
+      if (snapTween) snapTween.kill();
+
+      const opening = target === 1;
+      state.open = opening;
+
+      const duration = opening ? 0.55 : 0.4;
+
+      snapTween = gsap.to(state, {
+        progress: target,
+        duration,
+        // Stronger overshoot past the open pose, then settle back down
+        ease: opening ? 'back.out(2.6)' : 'power3.out',
+        onUpdate: () => applyProgress(state.progress),
+        onComplete: () => {
+          state.progress = target;
+          applyProgress(target);
+          snapTween = null;
+        },
+      });
+    }
+
+    function toggle() {
+      // Mid-animation: flip based on where we currently are
+      if (snapTween) {
+        state.progress = clamp01(state.progress);
+        state.open = state.progress >= 0.5;
+      }
+      snapTo(state.open ? 0 : 1);
+    }
+
+    function onActivate(e) {
+      if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      toggle();
+    }
+
+    slider.addEventListener('click', onActivate);
+    slider.addEventListener('keydown', onActivate);
+
+    window.addEventListener('resize', fitStage);
+    fitStage();
+    applyProgress(0);
+  </script>
+</body>
+</html>
